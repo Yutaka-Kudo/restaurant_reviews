@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/Users/yutakakudo/.venvs/飲食店口コミまとめサイト-ynfLdrwX/bin/python"
+    "python.pythonPath": "/Users/yutakakudo/.pyenv/shims/python"
+    // "python.pythonPath": "/Users/yutakakudo/.pyenv/versions/3.8.7/bin/python"
 }
