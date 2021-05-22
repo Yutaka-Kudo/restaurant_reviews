@@ -25,7 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('scrape/', include('scrape.urls')),
     # path('', include('display.urls')),
-    path('api/', include(scrape_router.urls)),
+    # path('api/', include(scrape_router.urls)),
     # path('api/search/', include(scrape_router_custom.urls)),
 
     # re_path('', TemplateView.as_view(template_name='index.html')),
