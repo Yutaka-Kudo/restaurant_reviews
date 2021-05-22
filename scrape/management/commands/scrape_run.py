@@ -14,8 +14,8 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
         area1 = input('Enter area1 県: ')
         area2 = input('Enter area2 市: ')
 
-        area1 = "千葉県"
-        area2 = "船橋市"
+        # area1 = "千葉県"
+        # area2 = "船橋市"
         # area2 = "市川市"
         # area2 = "千葉市"
         # area2 = "習志野市"
