@@ -24,7 +24,7 @@ from django.views.generic import TemplateView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('scrape/', include('scrape.urls')),
-    path('', include('display.urls')),
+    # path('', include('display.urls')),
     path('api/', include(scrape_router.urls)),
     # path('api/search/', include(scrape_router_custom.urls)),
 

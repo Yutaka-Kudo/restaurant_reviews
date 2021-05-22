@@ -74,7 +74,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://ecstatic-pike-1c690c.netlify.app",
+    # "https://ecstatic-pike-1c690c.netlify.app",
     "https://restaurant-reviews-nuxt.netlify.app",
 ]
 
