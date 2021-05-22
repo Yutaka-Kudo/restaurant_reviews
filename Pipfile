@@ -21,6 +21,7 @@ djangorestframework = "*"
 django-cors-headers = "*"
 django-filter = "*"
 gunicorn = "*"
+django-phonenumber-field = "*"
 
 [dev-packages]
 flake8 = "*"
