@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飲食店レビューまとめ</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/store_list.css' %}">
+
+
+
+    <!-- datepicker使うための。だったけど、これがないとjsが動作しない -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <!-- --------------------- -->
+
+
+
+
+</head>
+
+
+    
+    
+<body>
+{% block content %}
+<form action="{% url 'display:store_list' %}" method='GET'>
+    <input type="text" name="area">
+    <input type="text" name="store">
+    <input type="submit">
+</form>
+
+{% comment %} デバッグ用
+<a href="{% url 'display:scra' %}">scra</a> {% endcomment %}
+<div class="func-btn">
+{% comment %} <a href="{% url 'display_part:index' %}" class="function-btn"><button>リセット</button></a>
+<a href="{% url 'upload_part:index' %}" class="function-btn"><button>取り込み</button></a> {% endcomment %}
+<a href="{% url 'display:admin' %}" class="function-btn"><button>管理画面</button></a>
+</div>
+
+<a href="{% url 'scrape:scrape_run' %}">scrape_run</a>
+
+
+
+
+
+<div id="id1" v-text="">[[message]]</div>
+
+<div id="app-2">
+  <input type="text" v-model="message">
+  <div class="error" v-if="error.require">必須項目です。</div>
+  <div class="error" v-if="error.tooLong">長すぎます。</div>
+  <div>[[message]]</div>
+  <div>[[oldmsg]]</div>
+</div>
+
+
+
+<div id="app-103">
+  <input type="checkbox" @click="change" checked>
+  <span v-if="seen">Hello!</span>
+  <span v-else>bye</span>
+</div>
+
+
+
+<div id="app-212">
+<my-heading-212 :leve="1">Hello!</my-heading-212>
+</div>
+
+{% endblock content %}
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="{% static 'js/main.js' %}"></script>
+
+</body>

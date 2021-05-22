@@ -1,0 +1,31 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "==3.2"
+selenium = "*"
+bs4 = "*"
+devtools = "*"
+django-phonenumber-field = "*"
+phonenumbers = "*"
+janome = "*"
+python-dateutil = "*"
+googletrans = "==4.0.0-rc1"
+livereload = "*"
+psycopg2-binary = "*"
+webdriver-manager = "*"
+dj-database-url = "*"
+django_heroku = "*"
+djangorestframework = "*"
+django-cors-headers = "*"
+django-filter = "*"
+gunicorn = "*"
+
+[dev-packages]
+flake8 = "*"
+autopep8 = "*"
+
+[requires]
+python_version = "3.8"

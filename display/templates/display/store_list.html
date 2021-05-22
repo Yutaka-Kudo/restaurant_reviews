@@ -1,0 +1,204 @@
+{% extends 'display/index.html' %}
+{% load static %}
+
+{% block content %}
+
+<h1>{{area}}</h1>
+
+<div id="store_items">
+    <div v-for="store in stores_data_list" class="store_item" >
+        <span @click="show_details(store)" class="store_btn" name="store_link" >[[store.store_name]]</span>
+
+        <span v-show="store.only_uber_flg" class="uber_limited">UberEats限定</span>
+        <span class="rate_num_total">[[store.total_rate]]</span>
+        
+        
+        <span class="rate" :data-rate=[[store.total_rate_for_star]]></span>
+        <span class="review_count tota_review_count">[[store.total_review_count]]</span>
+        
+        <div class="media_rate">
+            <span v-for="media_type in store.media_type">
+                <span v-if="media_type.media_type === 'google' && media_type.media_data.id">
+                {% comment %} store.registed_media_type.includes('google') {% endcomment %}
+                    <a :href=[[media_type.media_data.url]] target="_blank">Google</a>
+                    <span class="google_rate">[[media_type.media_data.rate]]</span>
+                    <span class="rate" :data-rate=[[media_type.media_data.rate_for_star]]></span>
+                    <span class="review_count google_review_count">[[media_type.media_data.review_count]]</span>
+                </span>
+            </span>
+
+            <span v-for="media_type in store.media_type">
+                <span v-if="media_type.media_type === 'tb' && media_type.media_data.id">
+                    <a :href=[[media_type.media_data.url]] target="_blank">食べログ</a>
+                    <span class="tb_rate">[[media_type.media_data.rate]]</span>
+                    <span class="rate" :data-rate=[[media_type.media_data.rate_for_star]]></span>
+                    <span class="review_count tb_review_count">[[media_type.media_data.review_count]]</span>
+                </span>
+            </span>
+
+            <span v-for="media_type in store.media_type">
+                <span v-if="media_type.media_type === 'gn' && media_type.media_data.id">
+                    <a :href=[[media_type.media_data.url]] target="_blank">ぐるなび</a>
+                    <span class="gn_rate">[[media_type.media_data.rate]]</span>
+                    <span class="rate" :data-rate=[[media_type.media_data.rate_for_star]]></span>
+                    <span class="review_count gn_review_count">[[media_type.media_data.review_count]]</span>
+                </span>
+            </span>
+
+            <span v-for="media_type in store.media_type">
+                <span v-if="media_type.media_type === 'hp' && media_type.media_data.id">
+                    <a :href=[[media_type.media_data.url]] target="_blank">HotPepper</a>
+                    <span class="hp_rate">[[media_type.media_data.rate]]</span>
+                    <span class="rate" :data-rate=[[media_type.media_data.rate_for_star]]></span>
+                    <span class="review_count hp_review_count">[[media_type.media_data.review_count]]</span>
+                </span>
+            </span>
+
+            <span v-for="media_type in store.media_type">
+                <span v-if="media_type.media_type === 'retty' && media_type.media_data.id">
+                    <a :href=[[media_type.media_data.url]] target="_blank">Retty</a>
+                    <span class="retty_rate">[[media_type.media_data.rate]]</span>
+                    <span class="rate" :data-rate=[[media_type.media_data.rate_for_star]]></span>
+                    <span class="review_count retty_review_count">[[media_type.media_data.review_count]]</span>
+                </span>
+            </span>
+
+            <span v-for="media_type in store.media_type">
+                <span v-if="media_type.media_type === 'uber' && media_type.media_data.id">
+                    <a :href=[[media_type.media_data.url]] target="_blank">UberEats</a>
+                    <span class="uber_rate">[[media_type.media_data.rate]]</span>
+                    <span class="rate" :data-rate=[[media_type.media_data.rate_for_star]]></span>
+                    <span class="review_count uber_review_count">[[media_type.media_data.review_count]]</span>
+                </span>
+            </span>
+
+            <span v-for="media_type in store.media_type">
+                <span v-if="media_type.media_type === 'demaekan' && media_type.media_data.id">
+                    <a :href=[[media_type.media_data.url]] target="_blank">出前館</a>
+                    <span class="demaekan_rate">[[media_type.media_data.rate]]</span>
+                    <span class="rate" :data-rate=[[media_type.media_data.rate_for_star]]></span>
+                    <span class="review_count demaekan_review_count">[[media_type.media_data.review_count]]</span>
+                </span>
+            </span>
+
+            <span v-for="media_type in store.media_type">
+                <span v-if="media_type.media_type === 'foodpanda' && media_type.media_data.id">
+                    <a :href=[[media_type.media_data.url]] target="_blank">フードパンダ</a>
+                    <span class="foodpanda_rate">[[media_type.media_data.rate]]</span>
+                    <span class="rate" :data-rate=[[media_type.media_data.rate_for_star]]></span>
+                    <span class="review_count foodpanda_review_count">[[media_type.media_data.review_count]]</span>
+                </span>
+            </span>
+        </div>
+
+
+        <div v-show="store.seen" class="detail">
+            <div v-for="media_type in store.media_type">
+                <div v-if="media_type.media_data.id">
+                    <div class="media_name">
+                        [[media_type.official_name]]
+                    </div>
+                    <div v-if="media_type.media_type === 'tb'">
+                        <div v-for="review in media_type.media_data.review">
+                            <p class="title"><b>[[review.title | top50]]</b></p>
+                            <span class="review_point_num">[[review.review_point]]</span>
+                            <span class="rate" :data-rate=[[review.review_point_for_star]]></span>
+                            <span class="reivew_date">[[review.review_date | Ym]]</span>
+                            <p class="review_content">[[review.content | top50]]</p>
+                        </div>
+                    </div>
+                    <div v-else-if="media_type.media_type === 'hp'">
+                        <div v-for="review in media_type.media_data.review">
+                            <span class="reivew_date">[[review.review_date | Ym]]</span>
+                            <p class="review_content">[[review.content | top50]]</p>
+                        </div>
+                    </div>
+                    <div v-else>
+                        <div v-for="review in media_type.media_data.review">
+                            <span class="review_point_num">[[review.review_point]]</span>
+                            <span class="rate" :data-rate=[[review.review_point_for_star]]></span>
+                            <span class="reivew_date">[[review.review_date | Ym]]</span>
+                            <p class="review_content">[[review.content | top50]]</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+                
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script>
+
+var store_data = new Vue({
+    delimiters: ["[[", "]]"],
+    el: "#store_items",
+    data: {
+        stores_data_list: [],
+    },
+    methods:{
+        show_details: function(store){
+            var index_num = this.stores_data_list.indexOf(store);
+            this.stores_data_list[index_num].seen = !this.stores_data_list[index_num].seen;
+        },
+    },
+    created: function () {
+        axios.get('{% url "display:show_details" area_q=area store_q=store_q %}')
+            .then(function (response) {
+                console.log(response.data);
+                for(var d in response.data){
+                    var item = response.data[d];
+                    item.seen = false;
+
+                    if(!item.total_rate){
+                        item.total_rate = "-";
+                        item.total_rate_for_star = "0.0";
+                    };
+                    for(var n in item.media_type){
+                        try{
+                            item.media_type[n].media_data.review = item.media_type[n].media_data.review.slice(0,3);
+                        } catch{};
+                    };
+                    store_data.stores_data_list.push(item);
+                };
+            })
+            .catch(function(error){
+                console.log(error);
+            })
+            .finally(function(){
+            })
+    },
+})
+
+
+Vue.filter("top50", function(value){
+    return value.slice(0,50);
+})
+Vue.filter("fix1", function(value){
+    return Number(value).toFIxed(1);
+})
+Vue.filter("Ym", function(value){
+    var date = new Date(value);
+    var Ym = date.getFullYear() + "年" + ("0" + (date.getMonth()+1)).slice(-2) + "月";
+    return Ym;
+})
+
+
+// console.log(store_data.stores_data_list)
+
+
+
+</script>
+
+
+{% endblock content %}
