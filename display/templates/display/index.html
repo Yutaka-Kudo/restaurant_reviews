@@ -51,35 +51,7 @@
 
 
 
-<div id="id1" v-text="">[[message]]</div>
-
-<div id="app-2">
-  <input type="text" v-model="message">
-  <div class="error" v-if="error.require">必須項目です。</div>
-  <div class="error" v-if="error.tooLong">長すぎます。</div>
-  <div>[[message]]</div>
-  <div>[[oldmsg]]</div>
-</div>
-
-
-
-<div id="app-103">
-  <input type="checkbox" @click="change" checked>
-  <span v-if="seen">Hello!</span>
-  <span v-else>bye</span>
-</div>
-
-
-
-<div id="app-212">
-<my-heading-212 :leve="1">Hello!</my-heading-212>
-</div>
-
 {% endblock content %}
 
-<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-<script src="{% static 'js/main.js' %}"></script>
 
 </body>

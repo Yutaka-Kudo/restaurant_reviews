@@ -1,5 +1,5 @@
 from scrape import driver_settings
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys

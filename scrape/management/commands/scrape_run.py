@@ -8,6 +8,12 @@ from scrape.scrape_gn import scrape_gn
 
 class Command(BaseCommand):  # コマンド python manage.py ~~
     def handle(self, *args, **options):
+        media = input('Enter media! ex.tb gn google :')
+        start = int(input('Enter start num: '))
+        end = int(input('Enter end num: '))
+        area1 = input('Enter area1 県: ')
+        area2 = input('Enter area2 市: ')
+
         area1 = "千葉県"
         area2 = "船橋市"
         # area2 = "市川市"
@@ -21,14 +27,17 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
         # area1 = "東京都"
         # area2 = "中目黒"
 
-        scrape_tb(area1, area2, range(2, 10))
-        # scrape_hp(area1, area2, range(1, 4))
-        # scrape_gn(area1, area2, range(1, 2))
-        # scrape_google(area1, area2, range(1, 5))
+        if media == "tb":
+            scrape_tb(area1, area2, range(start, end))
+        elif media == "hp":
+            scrape_hp(area1, area2, range(start, end))
+        elif media == "gn":
+            scrape_gn(area1, area2, range(start, end))
+        elif media == "google":
+            scrape_google(area1, area2, range(start, end))
+        elif media == "google_collect_store":
+            scrape_google_get_storenames(area1, area2, range(start, end))
+        elif media == "uber":
+            scrape_uber(area1, area2)
 
-        # scrape_google_get_storenames(area1, area2, range(5,10))
-
-        # scrape_uber(area1, area2)
-
-        # return super().handle(*args, **options)
-
+            # return super().handle(*args, **options)
