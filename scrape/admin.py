@@ -24,7 +24,7 @@ admin.site.register(Store, StoreAdmin)
 
 
 class Media_dataAdmin(admin.ModelAdmin):
-    list_display = ["store", "media_type", "rate", "review_count"]
+    list_display = ["id","store", "media_type", "rate", "review_count"]
 
 
 admin.site.register(Media_data, Media_dataAdmin)

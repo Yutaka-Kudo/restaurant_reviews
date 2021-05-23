@@ -59,6 +59,8 @@ class Compare_storeName:
         self.a = Analyzer(char_filters=char_filters, token_filters=token_filters)
 
     def search_store_name(self, store_name: str, querysets, ignore_list: list = None, media: str = "", min_ratio: float = 0.6):
+        if ignore_list is None:
+            ignore_list = []
 
         def remove_unnecessary_word(store_name: str, ignore_list: list) -> str:
             for s in re.findall(r"【.*?】", store_name):  # 【...】を除去
@@ -73,8 +75,6 @@ class Compare_storeName:
                 analyzed_name = ''.join(analyzed_name).replace(w, '')
             return analyzed_name
 
-        if ignore_list is None:
-            ignore_list = []
 
         clean_name = remove_unnecessary_word(store_name, ignore_list)
         debug(clean_name)
@@ -134,7 +134,7 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
 
     print("----------------\n" + store_name)
     print('first_attack!')
-    store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media=media_type, min_ratio=0.7)  # mediaごとの名前で照会。同じメディアでも名前が微妙に変わることがあるので完全一致で探さない。
+    store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media=media_type, min_ratio=0.85)  # mediaごとの名前で照会。同じメディアでも名前が微妙に変わることがあるので完全一致で探さない。
     if store_kouho_dict:
         # debug(store_kouho_dict)
         store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
@@ -146,7 +146,7 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
     
     else:
         print('second_attack!')
-        store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media='', min_ratio=0.8)  # 今度はDB内の名前で照会
+        store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media='', min_ratio=0.85)  # 今度はDB内の名前で照会
         if store_kouho_dict:
             debug(store_kouho_dict)
             store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得

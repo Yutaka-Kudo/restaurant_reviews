@@ -228,7 +228,7 @@ def scrape_tb(area1, area2, page_range):
     except Exception as e:
         print(type(e))
         print(e)
-        print(f'えらー {page_num} キャプチャ！')
+        print(f'えらー {page_num}ページ キャプチャ！')
         capture(driver)
         driver.quit()
         raise Exception()
