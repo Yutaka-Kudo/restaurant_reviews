@@ -1,6 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.common import keys
-# from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 from time import sleep
@@ -56,8 +56,8 @@ def scrape_hp(area1, area2, page_range):
         return ignore_list
     ignore_list = create_ignoreList()
 
-    driver = webdriver.Chrome('chromedriver', options=driver_settings.options)
-    # driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
+    # driver = webdriver.Chrome('chromedriver', options=driver_settings.options)
+    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
     dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
 
     driver.get('https://www.hotpepper.jp/')

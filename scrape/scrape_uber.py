@@ -1,5 +1,5 @@
 from scrape import driver_settings
-# from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -42,8 +42,8 @@ def scrape_uber(area1, area2):
     media_type_obj = models.Media_type.objects.get(media_type=media_type)
     area_obj, _ = models.Area.objects.get_or_create(area_name=area1+" "+area2)
 
-    driver = webdriver.Chrome('chromedriver', options=driver_settings.options)
-    # driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
+    # driver = webdriver.Chrome('chromedriver', options=driver_settings.options)
+    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
     dw = Wait_located(driver)
 
     driver.get('https://www.ubereats.com/jp/')

@@ -1,5 +1,5 @@
 from selenium import webdriver
-# from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 from time import sleep
@@ -54,8 +54,8 @@ def scrape_tb(area1, area2, page_range):
         return ignore_list
     ignore_list = create_ignoreList()
 
-    driver = webdriver.Chrome('chromedriver', options=driver_settings.options)
-    # driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
+    # driver = webdriver.Chrome('chromedriver', options=driver_settings.options)
+    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
     dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
 
     driver.get('https://tabelog.com/')
@@ -159,13 +159,12 @@ def scrape_tb(area1, area2, page_range):
                         no_data_flg = False
                         log = item.select('.rvw-item__rvwr-balloon-text')[0]
                         log_num = int(log.text.replace(',', '').replace('ログ', ''))
+                        content_wrap = item.select_one('.rvw-item__review-contents-wrap')
                         try:
-                            # title = item.select('.rvw-item__title')[0].text.replace('\n', '').replace('\u200b', '').replace('\u3000', '')
-                            title = item.select('.rvw-item__title')[0].text.strip()
+                            title = content_wrap.select('.rvw-item__title')[0].text.strip()
                         except IndexError:
                             try:  # タイトルが無い投稿は本文の先頭24文字をとる。
-                                # title = item.select('.rvw-item__rvw-comment')[0].text.replace('\u200b', '').replace('\u3000', '').strip()[:24] + "…"
-                                title = item.select('.rvw-item__rvw-comment')[0].text.strip()[:24] + "…"
+                                title = content_wrap.select('.rvw-item__rvw-comment')[0].text.strip()[:24] + "…"
                             except IndexError:  # 本文もない場合はpass
                                 no_data_flg = True
                                 print('no data!!')
@@ -192,6 +191,7 @@ def scrape_tb(area1, area2, page_range):
                                 review_date = None
 
                             if atode_flg is False:
+                                debug(log_num, review_point, review_date, title)
                                 models.Review.objects.update_or_create(
                                     media=media_obj, title=title, defaults={
                                         "content": content,
@@ -200,7 +200,6 @@ def scrape_tb(area1, area2, page_range):
                                         "review_point": review_point,
                                     }
                                 )
-                                debug(log_num, review_point, review_date, title)
                                 print('レビュー登録!!')
                             else:
                                 # {"name":a,"name":a,"phone":a,"url":a,"rate":a,
