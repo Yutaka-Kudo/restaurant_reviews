@@ -79,7 +79,7 @@ def scrape_tb(area1, area2, page_range):
             dw.wait_lacated_class_name('list-rst__rst-name-target')  # 最初のelementが現れるまで待つ
             store_link_list = driver.find_elements_by_class_name('list-rst__rst-name-target')
 
-            for elem in store_link_list[:2]:
+            for elem in store_link_list:
                 atode_flg = False
                 atode_dict = {}
 
