@@ -20,6 +20,7 @@ django-cors-headers = "*"
 django-filter = "*"
 gunicorn = "*"
 django-phonenumber-field = "*"
+selenium = "*"
 
 [dev-packages]
 flake8 = "*"
