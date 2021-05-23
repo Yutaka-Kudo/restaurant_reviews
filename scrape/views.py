@@ -76,36 +76,36 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 
-from scrape.scrape_tb import scrape_tb
-from scrape.scrape_google import scrape_google, scrape_google_get_storenames
-from scrape.scrape_uber import scrape_uber
-from scrape.scrape_hp import scrape_hp
-from scrape.scrape_gn import scrape_gn
-from django.http import HttpResponse
+# from scrape.scrape_tb import scrape_tb
+# from scrape.scrape_google import scrape_google, scrape_google_get_storenames
+# from scrape.scrape_uber import scrape_uber
+# from scrape.scrape_hp import scrape_hp
+# from scrape.scrape_gn import scrape_gn
+# from django.http import HttpResponse
 
-def scrape_run(request):
-    area1 = "千葉県"
-    area2 = "船橋市"
-    # area2 = "市川市"
-    # area2 = "千葉市"
-    # area2 = "習志野市"
-    # area2 = "柏市"
+# def scrape_run(request):
+#     area1 = "千葉県"
+#     area2 = "船橋市"
+#     # area2 = "市川市"
+#     # area2 = "千葉市"
+#     # area2 = "習志野市"
+#     # area2 = "柏市"
 
-    # area1 = "埼玉県"
-    # area2 = "さいたま市"
+#     # area1 = "埼玉県"
+#     # area2 = "さいたま市"
 
-    # area1 = "東京都"
-    # area2 = "中目黒"
+#     # area1 = "東京都"
+#     # area2 = "中目黒"
 
-    scrape_tb(area1, area2, range(2, 10))
-    # scrape_hp(area1, area2, range(1, 4))
-    # scrape_gn(area1, area2, range(1, 2))
-    # scrape_google(area1, area2, range(1, 5))
+#     scrape_tb(area1, area2, range(2, 10))
+#     # scrape_hp(area1, area2, range(1, 4))
+#     # scrape_gn(area1, area2, range(1, 2))
+#     # scrape_google(area1, area2, range(1, 5))
 
-    # scrape_google_get_storenames(area1, area2, range(5,10))
+#     # scrape_google_get_storenames(area1, area2, range(5,10))
 
-    # scrape_uber(area1, area2)
+#     # scrape_uber(area1, area2)
 
-    # return super().handle(*args, **options)
-    return HttpResponse('すくれぴ')
+#     # return super().handle(*args, **options)
+#     return HttpResponse('すくれぴ')
 

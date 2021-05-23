@@ -2,7 +2,7 @@ import json
 from django.http import JsonResponse
 from datetime import datetime
 from scrape import models
-from scrape.scrape_tb import scrape_tb
+# from scrape.scrape_tb import scrape_tb
 from site_packages.my_module import Compare_storeName
 
 from django.shortcuts import render, redirect

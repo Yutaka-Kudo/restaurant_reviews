@@ -9,7 +9,7 @@ from scrape import views
 app_name = 'scrape'
 
 urlpatterns = [
-    path('scrape/', views.scrape_run, name="scrape_run"),
+    # path('scrape/', views.scrape_run, name="scrape_run"),
 ]
 
 
