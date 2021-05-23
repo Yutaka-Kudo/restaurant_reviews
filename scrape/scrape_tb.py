@@ -79,7 +79,7 @@ def scrape_tb(area1, area2, page_range):
             dw.wait_lacated_class_name('list-rst__rst-name-target')  # 最初のelementが現れるまで待つ
             store_link_list = driver.find_elements_by_class_name('list-rst__rst-name-target')
 
-            for elem in store_link_list:
+            for elem in store_link_list[:2]:
                 atode_flg = False
                 atode_dict = {}
 
@@ -97,7 +97,8 @@ def scrape_tb(area1, area2, page_range):
                 sleep(0.5)
                 print('handle OK!')
 
-                store_name = driver.find_element_by_class_name('display-name').text
+                # store_name = driver.find_element_by_class_name('display-name').text
+                store_name = dw.wait_lacated_class_name('display-name').text
                 try:
                     phone: str = driver.find_elements_by_class_name('rstinfo-table__tel-num')[-1].text
                     type(int(phone.replace('-', ''))) == int  # 電話番号が非公開がたまにある
