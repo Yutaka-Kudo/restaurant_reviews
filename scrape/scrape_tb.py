@@ -83,11 +83,11 @@ def scrape_tb(area1, area2, page_range):
                 atode_flg = False
                 atode_dict = {}
 
-                try:  # よくここでつまづく
-                    elem.click()
-                except Exception:
-                    capture(driver)
-                    raise Exception()
+                # try:  # よくここでつまづく
+                elem.click()
+                # except Exception:
+                #     capture(driver)
+                #     raise Exception()
 
                 # webdriver.ActionChains(driver).key_down(Keys.COMMAND).click(elem).perform() # なぜかこれで新規タブで開くと、次の普通クリックでも新規タブが開く
                 sleep(2)
@@ -231,7 +231,7 @@ def scrape_tb(area1, area2, page_range):
         print(f'えらー {page_num}ページ キャプチャ！')
         capture(driver)
         driver.quit()
-        raise Exception()
+        # raise Exception()
     # ーーーーーatode処理ーーーーーーーーーー
     # [{"store_name_db":a,"store_name_site":a,"phone":a,"store_url":a,"rate":a,
     # "review":[{"title":a,"content":a,"date":a,"log_num":a},{....},{.....}]},

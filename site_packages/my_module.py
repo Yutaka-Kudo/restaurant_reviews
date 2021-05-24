@@ -16,7 +16,7 @@ import re
 
 def capture(driver):
     n = datetime.datetime.now()
-    FILENAME = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), f"static/images/screen{n.date()}{n.hour}{n.minute}.png")  # なんでhourとminuteで分けてるんだっけ？
+    FILENAME = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), f"static/images/screen{n.strftime('%Y-%m-%d/%H%M')}.png")
     w = driver.execute_script('return document.body.scrollWidth;')
     h = driver.execute_script('return document.body.scrollHeight;')
     driver.set_window_size(w, h)
