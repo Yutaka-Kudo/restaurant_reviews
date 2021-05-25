@@ -176,7 +176,9 @@ except ImportError:
     pass
 
 if not DEBUG:
-    SECRET_KEY = os.environ['SECRET_KEY']
+    import requests
+    SECRET_KEY = requests.get('http://metadata.google.internal/computeMetadata/v1/instance/attributes/SECRET_KEY', headers={"Metadata-Flavor": "Google"}).text
+    # SECRET_KEY = os.environ['SECRET_KEY']
     import django_heroku
     django_heroku.settings(locals())
 
