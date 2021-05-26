@@ -35,7 +35,6 @@ ALLOWED_HOSTS = ['127.0.0.1','localhost' ,'34.145.97.214']
 # Application definition
 
 INSTALLED_APPS = [
-    "livereload",
 
     "display",
     "scrape",
@@ -181,6 +180,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 try:
     from .local_settings import *
+    INSTALLED_APPS.append("livereload")
 except ImportError:
     pass
 
