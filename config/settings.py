@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1', '.herokuapp.com']
+ALLOWED_HOSTS = ['127.0.0.1', '34.145.97.214']
 # ALLOWED_HOSTS = ['127.0.0.1']
 
 
@@ -105,14 +105,23 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'postgresql',
+#         'USER': 'yutakakudo',
+#         'PASSWORD': '',
+#         'HOST': 'localhost',
+#         'PORT': '',
+#     }
+# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'postgresql',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'restaurant_reviews',
         'USER': 'yutakakudo',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '',
+        'PASSWORD': 'udondondon',
+        'HOST': '127.0.0.1',
     }
 }
 # DATABASES = {
@@ -179,8 +188,8 @@ if not DEBUG:
     import requests
     SECRET_KEY = requests.get('http://metadata.google.internal/computeMetadata/v1/instance/attributes/SECRET_KEY', headers={"Metadata-Flavor": "Google"}).text
     # SECRET_KEY = os.environ['SECRET_KEY']
-    import django_heroku
-    django_heroku.settings(locals())
+    # import django_heroku
+    # django_heroku.settings(locals())
 
 db_from_env = dj_database_url.config(conn_max_age=600, ssl_require=True)
 DATABASES['default'].update(db_from_env)
