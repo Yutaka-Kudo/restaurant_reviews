@@ -28,6 +28,9 @@ class Store(models.Model):
     store_name_google = models.CharField("店名google", max_length=100, null=True, blank=True)
     area = models.ForeignKey(Area, verbose_name="エリア", on_delete=models.PROTECT)
     phone_number = models.CharField("電話", max_length=20, null=True, blank=True)
+    category1 = models.CharField(max_length=100, null=True, blank=True)
+    category2 = models.CharField(max_length=100, null=True, blank=True)
+    category3 = models.CharField(max_length=100, null=True, blank=True)
 
     def update_name(self, store_name: str, media: str = ""):
         if media == "":

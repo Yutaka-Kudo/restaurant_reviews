@@ -20,6 +20,7 @@ gunicorn = "*"
 django-phonenumber-field = "*"
 selenium = "*"
 webdriver-manager = "*"
+pymysql = "*"
 
 [dev-packages]
 flake8 = "*"

@@ -13,7 +13,8 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
-
+import pymysql
+pymysql.install_as_MySQLdb()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -28,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1','localhost' ,'34.145.97.214']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '34.145.97.214', "yk-restaurant-reviews-api.cyou"]
 # ALLOWED_HOSTS = ['127.0.0.1']
 
 
@@ -75,6 +76,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://ecstatic-pike-1c690c.netlify.app",
     "https://restaurant-reviews-nuxt.netlify.app",
+    "https://plstatement.engineerismydream33.org",
+    "https://restaurary.com",
 ]
 
 SESSION_ENGINE = "django.contrib.sessions.backends.file"

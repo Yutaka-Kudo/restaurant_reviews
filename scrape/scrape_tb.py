@@ -72,18 +72,21 @@ def scrape_tb(area1, area2, page_range):
         for page_num in page_range:  # いったん5ページ目まで
             print(f'page_num: {page_num}')
             try:
-                driver.find_elements_by_class_name('c-pagination__num')[page_num].click()  # ページ
+                driver.find_elements_by_class_name('c-pagination__num')[page_num-1].click()  # ページ
             except Exception:
                 pass
 
             dw.wait_lacated_class_name('list-rst__rst-name-target')  # 最初のelementが現れるまで待つ
             store_link_list = driver.find_elements_by_class_name('list-rst__rst-name-target')
 
+            # for elem in store_link_list[:4]:
             for elem in store_link_list:
                 atode_flg = False
                 atode_dict = {}
 
                 # try:  # よくここでつまづく
+                driver.execute_script("window.scrollTo(0, 0);")  # これないと読めないときもある
+
                 elem.click()
                 # except Exception:
                 #     capture(driver)
@@ -99,6 +102,12 @@ def scrape_tb(area1, area2, page_range):
 
                 # store_name = driver.find_element_by_class_name('display-name').text
                 store_name = dw.wait_lacated_class_name('display-name').text
+
+                try:
+                    category_list = driver.find_elements_by_class_name('rdheader-subinfo__item-text')[1].text.split('\n')
+                except Exception:
+                    category_list = None
+
                 try:
                     phone: str = driver.find_elements_by_class_name('rstinfo-table__tel-num')[-1].text
                     type(int(phone.replace('-', ''))) == int  # 電話番号が非公開がたまにある
@@ -108,7 +117,7 @@ def scrape_tb(area1, area2, page_range):
 
                 # 店名でstore_object取得  1番近いものを探すーーーー
 
-                store_obj, _atode_flg, _atode_dict, _created_list = store_model_process(area_obj, media_type, store_name, ignore_list, phone)
+                store_obj, _atode_flg, _atode_dict, _created_list = store_model_process(area_obj, media_type, store_name, ignore_list, phone, category_list)
 
                 atode_flg = _atode_flg
                 atode_dict.update(_atode_dict)
@@ -146,6 +155,7 @@ def scrape_tb(area1, area2, page_range):
                     dw.wait_lacated_link_text('訪問月順').click()
                     sleep(1)
                     print('口コミ発見！！')
+
                     # 「もっと見る」を全て展開ーーーーーーーー
                     mottomiru_list = driver.find_elements_by_class_name('js-show-review-items')[:6]  # 範囲制限
                     for i in mottomiru_list:
@@ -155,7 +165,7 @@ def scrape_tb(area1, area2, page_range):
                     soup = BeautifulSoup(res, 'html.parser')
                     items = soup.select('div.js-rvw-item-clickable-area')[:5]  # 範囲制限
                     atode_review_list = []
-                    for item in items:  # 再訪は無視
+                    for i, item in enumerate(items):  # 再訪は無視
                         no_data_flg = False
                         log = item.select('.rvw-item__rvwr-balloon-text')[0]
                         log_num = int(log.text.replace(',', '').replace('ログ', ''))
@@ -191,6 +201,10 @@ def scrape_tb(area1, area2, page_range):
                                 review_date = None
 
                             if atode_flg is False:
+                                if i == 0:  # 初期ループ時にデータ消して刷新
+                                    models.Review.objects.filter(media=media_obj).delete()
+                                    print('ReviewObj delete for renewal')
+
                                 debug(log_num, review_point, review_date, title)
                                 models.Review.objects.update_or_create(
                                     media=media_obj, title=title, defaults={

@@ -149,13 +149,13 @@ def scrape_gn(area1, area2, page_range):
                     print('口コミ発見！！')
 
                     # 「もっと見る」を全て展開ーーーーーーーー
-                    tsuzukiwoyomu_list = driver.find_elements_by_class_name('plus')[:4]  # 範囲制限
+                    tsuzukiwoyomu_list = driver.find_elements_by_class_name('plus')[:5]  # 範囲制限
                     for i in tsuzukiwoyomu_list:
                         i.click()
                         # sleep(0.6)  # 早すぎるとバグる
                     items = soup.select('li.trip-advisor-review__list')[:4]  # 範囲制限
                     atode_review_list = []
-                    for item in items:
+                    for i, item in enumerate(items):
                         no_data_flg = False
                         try:
                             title = item.select_one('.trip-advisor-review-title').text.strip()
@@ -191,6 +191,10 @@ def scrape_gn(area1, area2, page_range):
                                 review_date = None
 
                             if atode_flg is False:
+                                if i == 0:  # 初期ループ時にデータ消して刷新
+                                    models.Review.objects.filter(media=media_obj).delete()
+                                    print('ReviewObj delete for renewal')
+
                                 models.Review.objects.update_or_create(
                                     media=media_obj, title=title, defaults={
                                         "content": content,

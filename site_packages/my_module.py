@@ -122,7 +122,10 @@ class Compare_storeName:
 
 
 # 店名でstore_object取得  1番近いものを探すーーーー
-def store_model_process(area_obj: models.Area, media_type: str, store_name: str, ignore_list: list, phone: str = ""):
+def store_model_process(area_obj: models.Area, media_type: str, store_name: str, ignore_list: list, phone: str = "", category_list: list = None):
+    if category_list is None:
+        category_list = []
+
     _atode_flg = False
     _atode_dict = {}
     _created_list = []
@@ -141,6 +144,19 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
         store_obj.update_name(store_name, media_type)
         if media_type == "tb":
             store_obj.update_name(store_name)
+
+            # カテゴリ登録
+            if category_list:
+                try:
+                    store_obj.category1 = category_list[0]
+                    store_obj.save()
+                    store_obj.category2 = category_list[1]
+                    store_obj.save()
+                    store_obj.category3 = category_list[2]
+                    store_obj.save()
+                    print('カテゴリ登録OK!')
+                except Exception as e:
+                    print(f'カテゴリ登録failed.. {e}')
         print('get store_obj!!')
 
     else:
@@ -152,6 +168,19 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
             store_obj.update_name(store_name, media_type)
             if media_type == "tb":
                 store_obj.update_name(store_name)
+
+                # カテゴリ登録
+                if category_list:
+                    try:
+                        store_obj.category1 = category_list[0]
+                        store_obj.save()
+                        store_obj.category2 = category_list[1]
+                        store_obj.save()
+                        store_obj.category3 = category_list[2]
+                        store_obj.save()
+                        print('カテゴリ登録OK!')
+                    except Exception as e:
+                        print(f'カテゴリ登録failed.. {e}')
             print('get store_obj and update!!')
         else:
             print('third_attack!')
@@ -170,13 +199,29 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
                 _atode_dict["clean_name_in_db"] = sub_name_dict["clean_name_in_db"]
                 if phone:
                     _atode_dict["phone"] = phone
+                if category_list:
+                    _atode_dict["category"] = category_list
 
             else:
-                store_obj, _ = models.Store.objects.get_or_create(store_name=store_name, area=area_obj)  # (注)store_name_tb のところは各媒体で変える
+                store_obj, _ = models.Store.objects.get_or_create(store_name=store_name, area=area_obj)
+
                 store_obj.update_name(store_name, media_type)
                 if phone:
                     store_obj.phone_number = phone
                     store_obj.save()
+
+                # カテゴリ登録
+                if category_list:
+                    try:
+                        store_obj.category1 = category_list[0]
+                        store_obj.save()
+                        store_obj.category2 = category_list[1]
+                        store_obj.save()
+                        store_obj.category3 = category_list[2]
+                        store_obj.save()
+                        print('カテゴリ登録OK!')
+                    except Exception as e:
+                        print(f'カテゴリ登録failed.. {e}')
 
                 _created_list.append(store_name)
                 print('create store_obj!!')
@@ -217,7 +262,7 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             else:
                 return submit_update()
         submit_update()
-        
+
         print(f"あと {len(atode_list)-i}")
 
     if update_list:
@@ -232,6 +277,19 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                     store_obj.save()
                 except KeyError:
                     pass
+
+                # カテゴリ登録
+                try:
+                    store_obj.category1 = store["category"][0]
+                    store_obj.save()
+                    store_obj.category2 = store["category"][1]
+                    store_obj.save()
+                    store_obj.category3 = store["category"][2]
+                    store_obj.save()
+                    print('カテゴリ登録OK!')
+                except Exception as e:
+                    print(f'カテゴリ登録failed.. {e}')
+
 
                 media_obj, _ = models.Media_data.objects.update_or_create(
                     store=store_obj, media_type=media_type_obj,
@@ -252,7 +310,10 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
                 if media_type == "tb":
                     try:
-                        for review in store["review"]:
+                        for i, review in enumerate(store["review"]):
+                            if i == 0:
+                                models.Review.objects.filter(media=media_obj).delete()
+                                print('ReviewObj delete for renewal')
                             models.Review.objects.update_or_create(
                                 media=media_obj, title=review["title"], defaults={
                                     "content": review["content"],
@@ -268,7 +329,10 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                         print(type(e), e)
                 elif media_type == "google":
                     try:
-                        for review in store["review"]:
+                        for i, review in enumerate(store["review"]):
+                            if i == 0:
+                                models.Review.objects.filter(media=media_obj).delete()
+                                print('ReviewObj delete for renewal')
                             models.Review.objects.update_or_create(
                                 media=media_obj, content=review["content"], defaults={
                                     "review_date": review["date"],
@@ -282,7 +346,10 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                         print(type(e), e)
                 elif media_type == "gn":
                     try:
-                        for review in store["review"]:
+                        for i, review in enumerate(store["review"]):
+                            if i == 0:
+                                models.Review.objects.filter(media=media_obj).delete()
+                                print('ReviewObj delete for renewal')
                             models.Review.objects.update_or_create(
                                 media=media_obj, title=review["title"], defaults={
                                     "content": review["content"],
@@ -294,7 +361,10 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                         print(type(e), e)
                 elif media_type == "hp":
                     try:
-                        for review in store["review"]:
+                        for i, review in enumerate(store["review"]):
+                            if i == 0:
+                                models.Review.objects.filter(media=media_obj).delete()
+                                print('ReviewObj delete for renewal')
                             models.Review.objects.update_or_create(
                                 media=media_obj, content=review["content"], defaults={
                                     "review_date": review["date"],
@@ -328,6 +398,19 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                     store_obj.save()
                 except KeyError:
                     pass
+
+                # カテゴリ登録
+                try:
+                    store_obj.category1 = store["category"][0]
+                    store_obj.save()
+                    store_obj.category2 = store["category"][1]
+                    store_obj.save()
+                    store_obj.category3 = store["category"][2]
+                    store_obj.save()
+                    print('カテゴリ登録OK!')
+                except Exception as e:
+                    print(f'カテゴリ登録failed.. {e}')
+
                 media_obj, _ = models.Media_data.objects.get_or_create(
                     store=store_obj,
                     media_type=media_type_obj,

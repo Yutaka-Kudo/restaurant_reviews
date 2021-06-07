@@ -20,7 +20,6 @@ from site_packages.my_module import *
 media_type = "google"
 
 
-
 def scrape_google(area1, area2, page_range):
     print(area1+" "+area2)
     media_type_obj = models.Media_type.objects.get(media_type=media_type)
@@ -28,6 +27,7 @@ def scrape_google(area1, area2, page_range):
 
     compare_store_name = Compare_storeName()
     store_objs = models.Store.objects.filter(area=area_obj)
+
     def create_ignoreList():
         area1_word = area1[:-1]
         area2_word = area2 if area1 == "東京都" else area2[:-1]
@@ -46,7 +46,6 @@ def scrape_google(area1, area2, page_range):
         ignore_list.append("store")
         return ignore_list
     ignore_list = create_ignoreList()
-    
 
     # driver = webdriver.Chrome('chromedriver', options=driver_settings.options)
     driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
@@ -103,7 +102,7 @@ def scrape_google(area1, area2, page_range):
                     # akp_tsuid137 > div > div:nth-child(1) > div > div > div > div.kp-blk.knowledge-panel.Wnoohf.OJXvsb > div > div.ifM9O > div > div.kp-header > div > div:nth-child(2) > div:nth-child(1) > div > div > span.hqzQac > span > a > span
                     debug(store_name)
 
-                    if store_name == "居酒屋": # 多分Googleだけ、変な名前、登録データなしでつまる。
+                    if store_name == "居酒屋":  # 多分Googleだけ、変な名前、登録データなしでつまる。
                         ng_flg = True
                     if ng_flg == False:
                         try:
@@ -145,7 +144,7 @@ def scrape_google(area1, area2, page_range):
                         except Exception:
                             ng_flg = True
 
-                    def collect_review():
+                    def collect_review(second_time=False):
                         sleep(2)
                         for review_num in range(1, 6):
                             no_content_flg = False
@@ -192,9 +191,12 @@ def scrape_google(area1, area2, page_range):
                                 splited = review_point.split(' ')
                                 review_point = float(splited[2])
 
-                                debug(review_date, review_point, content)
-
                                 if atode_flg is False:
+                                    if second_time is True and review_num == 1:  # 初期ループ時にデータ消して刷新
+                                        models.Review.objects.filter(media=media_obj).delete()
+                                        print('ReviewObj delete for renewal')
+
+                                    debug(review_date, review_point, content)
                                     try:
                                         models.Review.objects.update_or_create(
                                             media=media_obj, content=content, defaults={
@@ -218,12 +220,12 @@ def scrape_google(area1, area2, page_range):
                         collect_review()
                         try:
                             driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(2) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
-                            collect_review()  # もう一回
+                            collect_review(second_time=True)  # もう一回
                             sleep(1)
                         except Exception:
                             try:
                                 driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(3) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
-                                collect_review()  # もう一回
+                                collect_review(second_time=True)  # もう一回
                                 sleep(1)
                             except Exception:
                                 print('新規順クリックerror!!!!!!!!!')
@@ -409,7 +411,6 @@ def scrape_google_get_storenames(area1, area2, page_range):
     not_adopted_list = []
     if atode_list:
         _created_list, not_adopted_list = atode_process(atode_list, media_type, media_type_obj, area_obj)
-
 
     print('作成は、')
     pp(created_list)
