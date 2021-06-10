@@ -124,6 +124,9 @@ DATABASES = {
         'USER': 'yutakakudo',
         'PASSWORD': 'udondondon',
         'HOST': '127.0.0.1',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        }
     }
 }
 # DATABASES = {

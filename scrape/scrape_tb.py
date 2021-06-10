@@ -72,7 +72,7 @@ def scrape_tb(area1, area2, page_range):
         for page_num in page_range:  # いったん5ページ目まで
             print(f'page_num: {page_num}')
             try:
-                driver.find_elements_by_class_name('c-pagination__num')[page_num-1].click()  # ページ
+                driver.find_element_by_xpath(f'//a[@class="c-pagination__num" and text()="{page_num}"]').click()  # ページ
             except Exception:
                 pass
 

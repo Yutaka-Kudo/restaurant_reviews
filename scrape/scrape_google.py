@@ -54,7 +54,7 @@ def scrape_google(area1, area2, page_range):
     driver.get('https://google.com/')
 
     area_input = driver.find_element_by_css_selector('body > div > div:nth-child(3) > form > div > div > div > div > div:nth-child(2) > input')
-    area_input.send_keys(f'{area1+area2} 居酒屋' + Keys.ENTER)
+    area_input.send_keys(f'{area1+area2} 飲食店' + Keys.ENTER)
     sleep(2)
 
     driver.find_element_by_link_text('すべて表示').click()
@@ -78,9 +78,9 @@ def scrape_google(area1, area2, page_range):
 
             # 1ページ目の広告枠＋3個のあとにおすすめページに誘われるのでそこをスルー
             # store_list_wrap = driver.find_element_by_css_selector('div.rl_tile-group > div:nth-of-type(4)')
-            class_details = driver.find_elements_by_xpath("//span[contains(@class,'__details')]")
+            details_class = driver.find_elements_by_xpath("//span[contains(@class,'__details')]")
             ad_count = 0
-            for c in class_details:
+            for c in details_class:
                 if c.text.count('広告'):
                     ad_count += 1
             print("ad_count: " + str(ad_count))
@@ -105,6 +105,7 @@ def scrape_google(area1, area2, page_range):
                     if store_name == "居酒屋":  # 多分Googleだけ、変な名前、登録データなしでつまる。
                         ng_flg = True
                     if ng_flg == False:
+
                         try:
                             phone = driver.find_element_by_xpath('/html/body/div[6]/div/div[8]/div[2]/div/div[2]/async-local-kp/div/div/div[1]/div/div/div/div[1]/div/div[1]/div').find_element_by_xpath("//span[@role='link']").text
                             type(int(phone.replace('-', ''))) == int  # 電話番号が非公開がたまにある
@@ -121,22 +122,33 @@ def scrape_google(area1, area2, page_range):
 
                         # media_data用ーーー
                         store_url = driver.current_url
-                        rate = driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div:nth-child(2) > div > div > div > span').text
+
                         try:
+                            rate = driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div:nth-child(2) > div > div > div > span').text
                             rate: float = 0 if rate == '-' else float(rate)
                         except Exception:
                             rate = 0
+
+                        try:
+                            rev_count = driver.find_element_by_xpath("//span[contains(text(),'Google のクチコミ')]").text
+                            rev_count = int(rev_count.split('（')[-1].replace('）', ''))
+                        except Exception:
+                            print('no rev_count')
+                            rev_count = 0
+
                         if atode_flg is False:
                             media_obj, _ = models.Media_data.objects.update_or_create(
                                 store=store_obj, media_type=media_type_obj,
                                 defaults={
                                     "url": store_url,
                                     "rate": rate,
+                                    "review_count": rev_count,
                                 }
                             )
                         else:
                             atode_dict["store_url"] = store_url
                             atode_dict["rate"] = rate
+                            atode_dict["review_count"] = rev_count
 
                         atode_review_list = []
                         try:
@@ -144,7 +156,7 @@ def scrape_google(area1, area2, page_range):
                         except Exception:
                             ng_flg = True
 
-                    def collect_review(second_time=False):
+                    def collect_review(first_time=False):
                         sleep(2)
                         for review_num in range(1, 6):
                             no_content_flg = False
@@ -192,7 +204,8 @@ def scrape_google(area1, area2, page_range):
                                 review_point = float(splited[2])
 
                                 if atode_flg is False:
-                                    if second_time is True and review_num == 1:  # 初期ループ時にデータ消して刷新
+
+                                    if first_time is True and review_num == 1:  # 初期ループ時にデータ消して刷新
                                         models.Review.objects.filter(media=media_obj).delete()
                                         print('ReviewObj delete for renewal')
 
@@ -217,15 +230,21 @@ def scrape_google(area1, area2, page_range):
                                     atode_review_list.append(atode_review_dict)
 
                     if not ng_flg:
-                        collect_review()
+
+                        # データ収集。新規順ボタンが押せない場合があるので2周する。
+                        collect_review(first_time=True)
                         try:
-                            driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(2) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
-                            collect_review(second_time=True)  # もう一回
+                            # driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(2) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
+                            driver.find_element_by_xpath("//div[span[contains(text(),'新規順')]]").click()  # 新規順クリック
+
+                            print('新規順クリック')
+                            collect_review()  # もう一回
                             sleep(1)
                         except Exception:
                             try:
                                 driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(3) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
-                                collect_review(second_time=True)  # もう一回
+                                print('新規順クリック')
+                                collect_review()  # もう一回
                                 sleep(1)
                             except Exception:
                                 print('新規順クリックerror!!!!!!!!!')
@@ -299,8 +318,8 @@ def scrape_google_get_storenames(area1, area2, page_range):
 
     try:
         debug_list = []
-        is_first_page = True
-        for page_num in page_range:  # ページーーーーーーーーーーーーーーー
+        # ページーーーーーーーーーーーー
+        for loopnum, page_num in enumerate(page_range):
             debug(page_num)
             try:
                 driver.find_element_by_xpath(f"//a[@aria-label='Page {page_num}']").click()
@@ -313,9 +332,9 @@ def scrape_google_get_storenames(area1, area2, page_range):
             # 1ページ目の広告枠＋3個のあとにおすすめページに誘われるのでそこをスルー
             # store_list_wrap = driver.find_element_by_css_selector('div.rl_tile-group > div:nth-of-type(4)')
             try:
-                class_details = driver.find_elements_by_xpath("//span[contains(@class,'__details')]")
+                details_class = driver.find_elements_by_xpath("//span[contains(@class,'__details')]")
                 ad_count = 0
-                for c in class_details:
+                for c in details_class:
                     if c.text.count('広告'):
                         ad_count += 1
                 print("ad_count: " + str(ad_count))
@@ -323,15 +342,19 @@ def scrape_google_get_storenames(area1, area2, page_range):
                 print("ad_count: no get")
 
             soup = BeautifulSoup(driver.page_source, "html.parser")
+
+            # 店名が記載されているクラス名を取得 動的に変わる 最初だけでOK
+            if loopnum == 0:
+                try:
+                    name_class = soup.select_one(f".rlfl__tls.rl_tls > div:nth-of-type({ad_count+1}) > div:nth-of-type(3) > div > a > div > div:nth-of-type(3)").get('class')[0]
+                except Exception:  # ２パターン目 現在２パターン確認済み
+                    name_class = soup.select_one(f".rlfl__tls.rl_tls > div:nth-of-type({ad_count+1}) > div:nth-of-type(2) > div > a > div > div:nth-of-type(3)").get('class')[0]
+
             try:
-                name_class = soup.select_one(f".rlfl__tls.rl_tls > div:nth-of-type({ad_count+1}) > div > div:nth-of-type(3) > div > a > div > div:nth-of-type(2)").get('class')[0]
+                # rate_elems = soup.select("span[class*='__details']")[ad_count+1].select_one(f'div > span:nth-of-type({1})').get('class')[0]
+                rate_elems = soup.select(".rlfl__tls.rl_tls > div")[ad_count:]
             except Exception:
-                name_class = soup.select_one(f".rlfl__tls.rl_tls > div:nth-of-type({ad_count+1}) > div > div:nth-of-type(2) > div > a > div > div:nth-of-type(2)").get('class')[0]
-            try:
-                # rate_class = soup.select("span[class*='__details']")[ad_count+1].select_one(f'div > span:nth-of-type({1})').get('class')[0]
-                rate_class = soup.select(".rlfl__tls.rl_tls > div")[ad_count:]
-            except Exception:
-                # rate_class = soup.select("span[class*='__details']")[ad_count+2].select_one(f'div > span:nth-of-type({1})').get('class')[0]
+                # rate_elems = soup.select("span[class*='__details']")[ad_count+2].select_one(f'div > span:nth-of-type({1})').get('class')[0]
                 pass
 
             name_list = []
@@ -343,32 +366,29 @@ def scrape_google_get_storenames(area1, area2, page_range):
             for c in name_class_list:
                 name_list.append(c.text)
 
-            # rate_class_list = soup.select(f".{rate_class}")
+            # rate_class_list = soup.select(f".{rate_elems}")
             # ad_count -= 20 - len(rate_class_list)
-            if is_first_page is True:
-                del rate_class[3]  # 4つ目が広告
-                is_first_page = False
+            if loopnum == 0:
+                del rate_elems[3]  # 4つ目が広告
 
-            try:
-                for c in rate_class[:-1]:
+            # レートと評価数ーーーーー
+            for c in rate_elems[:-1]:
+                try:
                     rate = c.select_one("span[class*='__details']").select_one(f'div > span:nth-of-type({1})').text
-                    try:
-                        rate = float(rate)
-                    except Exception:
-                        rate = 0
-                    rate_list.append(rate)
+                    rate = float(rate)
+                except Exception:
+                    rate = 0
+                rate_list.append(rate)
 
+                try:
                     review_count = c.select_one("span[class*='__details']").select_one(f'div > span:nth-of-type({1}) ~ span').text
-                    try:
-                        review_count = int(review_count.strip('()'))
-                    except ValueError as e:
-                        print(e)
-                        print('review_count = 0 にします')
-                        review_count = 0
+                    review_count = int(review_count.strip('()'))
+                except Exception as e:
+                    print(e)
+                    print('review_count = 0 にします')
+                    review_count = 0
 
-                    review_count_list.append(review_count)
-            except Exception:
-                pass
+                review_count_list.append(review_count)
 
             debug(len(name_list), len(review_count_list), len(rate_list))
             if not len(name_list) == len(rate_list) == len(review_count_list):

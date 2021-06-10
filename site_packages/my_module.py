@@ -16,7 +16,7 @@ import re
 
 def capture(driver):
     n = datetime.datetime.now()
-    FILENAME = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), f"static/images/screen{n.strftime('%Y-%m-%d/%H%M')}.png")
+    FILENAME = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), f"static/images/screen{n.strftime('%Y-%m-%d_%H%M')}.png")
     w = driver.execute_script('return document.body.scrollWidth;')
     h = driver.execute_script('return document.body.scrollHeight;')
     driver.set_window_size(w, h)
@@ -241,6 +241,8 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
     for i, store in enumerate(atode_list):
         print(f'この名前: {store["store_name_site"]}  \nDBの名前: {store["store_name_db"]}\nclean   : {store["clean_name"]}\nclean_db: {store["clean_name_in_db"]}')
 
+        print(f"あと {len(atode_list)-i}")
+
         def submit_update():
             submit = input('この名前ですか？y / N： ').lower()
             if submit == "y":
@@ -262,8 +264,6 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             else:
                 return submit_update()
         submit_update()
-
-        print(f"あと {len(atode_list)-i}")
 
     if update_list:
         for i, store in enumerate(update_list):
@@ -289,7 +289,6 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                     print('カテゴリ登録OK!')
                 except Exception as e:
                     print(f'カテゴリ登録failed.. {e}')
-
 
                 media_obj, _ = models.Media_data.objects.update_or_create(
                     store=store_obj, media_type=media_type_obj,
@@ -322,9 +321,6 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                                     "review_point": review["review_point"],
                                 }
                             )
-                        # review_count = len(models.Review.objects.filter(media=media_obj))
-                        # media_obj.review_count = review_count
-                        # media_obj.save()
                     except Exception as e:
                         print(type(e), e)
                 elif media_type == "google":
@@ -339,9 +335,6 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                                     "review_point": review["review_point"],
                                 }
                             )
-                        # review_count = len(models.Review.objects.filter(media=media_obj))
-                        # media_obj.review_count = review_count
-                        # media_obj.save()
                     except Exception as e:
                         print(type(e), e)
                 elif media_type == "gn":
@@ -435,49 +428,52 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                 if media_type == "tb":
                     try:
                         for review in store["review"]:
-                            models.Review.objects.create(
-                                media=media_obj,
-                                title=review["title"],
-                                content=review["content"],
-                                review_date=review["date"],
-                                log_num_byTabelog=review["log_num"],
-                                review_point=review["review_point"],
+                            models.Review.objects.update_or_create(
+                                media=media_obj, title=review["title"],
+                                defaults={
+                                    "content": review["content"],
+                                    "review_date": review["date"],
+                                    "log_num_byTabelog": review["log_num"],
+                                    "review_point": review["review_point"],
+                                }
                             )
-                        # review_count = len(models.Review.objects.filter(media=media_obj))
-                        # media_obj.review_count = review_count
-                        # media_obj.save()
                     except Exception as e:
                         print(type(e), e)
                 elif media_type == "google":
                     try:
                         for review in store["review"]:
-                            models.Review.objects.create(
-                                media=media_obj,
-                                content=review["content"],
-                                review_date=review["date"],
-                                review_point=review["review_point"],
+                            # googleは保険かけてレビュー2周するのでupdate_or_createで。
+                            models.Review.objects.update_or_create(
+                                media=media_obj, content=review["content"],
+                                defaults={
+                                    "review_date": review["date"],
+                                    "review_point": review["review_point"],
+                                }
                             )
                     except Exception as e:
                         print(type(e), e)
+                        print("本文:::" + review["content"])
                 elif media_type == "gn":
                     try:
                         for review in store["review"]:
-                            models.Review.objects.create(
-                                media=media_obj,
-                                title=review["title"],
-                                content=review["content"],
-                                review_date=review["date"],
-                                review_point=review["review_point"],
+                            models.Review.objects.update_or_create(
+                                media=media_obj, content=review["content"],
+                                defaults={
+                                    "title": review["title"],
+                                    "review_date": review["date"],
+                                    "review_point": review["review_point"],
+                                }
                             )
                     except Exception as e:
                         print(type(e), e)
                 elif media_type == "hp":
                     try:
                         for review in store["review"]:
-                            models.Review.objects.create(
-                                media=media_obj,
-                                content=review["content"],
-                                review_date=review["date"],
+                            models.Review.objects.update_or_create(
+                                media=media_obj, content=review["content"],
+                                defaults={
+                                    "review_date": review["date"],
+                                }
                             )
                     except Exception as e:
                         print(type(e), e)
@@ -497,23 +493,40 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
     return _created_list, not_adopted_list
 
 
-# UNIQUE constraint failed: scrape_store.store_name, scrape_store.area_id
+# media_dataのないstoreを掃除ーーーーーーーーー
+area_obj = models.Area.objects.get(area_name="千葉県 市川市")
+
+
+def clean_store_obj(area_obj):
+    store_objs = models.Store.objects.filter(area=area_obj)
+    count = len(store_objs)
+    for s in store_objs:
+        if len(models.Media_data.objects.filter(store=s)) == 0:
+            s.delete()
+        print(f"count あと {count}")
+        count -= 1
+
 
 # 重複を統合ーーーーーーーーーー
-def conflict_integration():  # 名前とメディアタイプ変えるだけ
-    store: str = "肉と日本酒 ときどきワイン 船橋ガーデン"  # 親
-    target_store: str = "船橋ガーデン 船橋駅前店"  # 子
+def conflict_integration():
+    # area = "千葉県 船橋市"
+    area = "千葉県 千葉市"
+    store: str = "和伊きっちん itAPAn"  # 親
+    target_store: str = "おおすぎ大衆酒場"  # 子
     target_media_type: str = "google"
 
-    target_store_obj = models.Store.objects.get(store_name=target_store)
+    # target_store_obj = models.Store.objects.get(store_name=target_store)
+    target_store_obj = models.Store.objects.get(store_name=target_store, area__area_name=area)
+    exec(f"target_store_name_by_media = target_store_obj.store_name_{target_media_type}")
     target_m_type_obj = models.Media_type.objects.get(media_type=target_media_type)
     target_m_data_obj = models.Media_data.objects.get(store=target_store_obj, media_type=target_m_type_obj)
     target_r_objs = models.Review.objects.filter(media=target_m_data_obj)
 
-    # 入れる方
-    store_obj = models.Store.objects.get(store_name=store)
-    store_obj.update_name(target_store, target_media_type)
-    m_data_obj, _ = models.Media_data.objects.update_or_create(store=store_obj, media_type=target_m_type_obj)
+    # 親
+    store_obj = models.Store.objects.get(store_name=store, area__area_name=area)
+    store_obj.update_name(target_store_name_by_media, target_media_type)  # 各メディア用名前
+    m_data_obj, _ = models.Media_data.objects.update_or_create(store=store_obj, media_type=target_m_type_obj)  # media_dataなければ作る
+
     try:
         m_data_obj.url = target_m_data_obj.url
         m_data_obj.save()
@@ -555,4 +568,16 @@ def conflict_integration():  # 名前とメディアタイプ変えるだけ
         except Exception:
             pass
 
-    target_store_obj.delete()
+    if input('media_dataとstore_name_by_media消す？y/n: ') == "y":
+        target_m_data_obj.delete()
+        exec(f"target_store_obj.store_name_{target_media_type} = ''")
+        target_store_obj.save()
+
+    if input('store消す？y/n: ') == "y":
+        target_store_obj.delete()
+
+
+# for t in target_r_objs:
+#     print()
+# target_r_objs[6].content
+# len(target_r_objs)

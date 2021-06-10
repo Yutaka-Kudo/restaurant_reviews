@@ -3,7 +3,7 @@ from scrape.models import *
 
 
 class AreaAdmin(admin.ModelAdmin):
-    list_display = ["area_name"]
+    list_display = ["area_name","id"]
 
 
 admin.site.register(Area, AreaAdmin)

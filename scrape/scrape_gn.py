@@ -16,6 +16,7 @@ from site_packages.my_module import *
 
 # area1 = "千葉県"
 # area2 = "船橋市"
+# area2 = "千葉市"
 
 media_type = "gn"
 
@@ -66,7 +67,7 @@ def scrape_gn(area1, area2, page_range):
     sleep(2)
 
     driver.find_element_by_class_name('search-group__block-trigger').click()
-    driver.find_element_by_xpath(f"//a[contains(@data-value,'{area2[:-1]}')]").click()
+    driver.find_elements_by_xpath(f"//a[contains(@data-value,'{area2[:-1]}')]")[-1].click() # 県名と同じ市名だと選択肢がかぶるので。
     driver.find_element_by_xpath("//input[@value='検索する']").click()
     sleep(1)
     driver.find_element_by_class_name('search-group__block-trigger').click()

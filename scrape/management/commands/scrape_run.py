@@ -14,8 +14,8 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
         area1 = input('Enter area1 県: ')
         area2 = input('Enter area2 市: ')
 
-        area1 = "千葉県"
-        area2 = "船橋市"
+        # area1 = "千葉県"
+        # area2 = "船橋市"
         # area2 = "市川市"
         # area2 = "千葉市"
         # area2 = "習志野市"
@@ -35,7 +35,7 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
             scrape_gn(area1, area2, range(start, end))
         elif media == "google":
             scrape_google(area1, area2, range(start, end))
-        elif media == "google_collect_store":
+        elif media == "gcs":
             scrape_google_get_storenames(area1, area2, range(start, end))
         elif media == "uber":
             scrape_uber(area1, area2)

@@ -54,11 +54,14 @@ def scrape_uber(area1, area2):
     input_area.send_keys(Keys.ENTER)
 
     # 「最も人気の料理」ーーーーーーーーーー
+    sleep(2)
     try:
-        dw.wait_lacated_xpath('/html/body/div[1]/div/main/div/div[3]/div[1]/div[2]/div[1]/div[2]/div[2]/div[1]/div/label[2]/span').click()
+        driver.find_element_by_xpath("//span[contains(text(), '並べ替え')]").click()
+        driver.find_element_by_xpath("//span[contains(text(), '  最も人気の料理')]").click()
         # driver.find_element_by_xpath('/html/body/div[1]/div/main/div/div[3]/div[1]/div[2]/div[1]/div[2]/div[2]/div[1]/div/label[2]/span').click()  # TOP画面用
-    except:
-        dw.wait_lacated_xpath('/html/body/div[1]/div/main/div/div/div[1]/div[2]/div[1]/div[2]/div[2]/div[2]/div/label[2]/span').click()
+    except Exception:
+        driver.find_element_by_xpath('/html/body/div[1]/div/main/div/div[3]/div[1]/div[2]/div[1]/div[2]/div[2]/div[1]/div/label[2]/span').click()
+        # dw.wait_lacated_xpath('/html/body/div[1]/div/main/div/div/div[1]/div[2]/div[1]/div[2]/div[2]/div[2]/div/label[2]/span').click()
         # driver.find_element_by_xpath('/html/body/div[1]/div/main/div/div/div[1]/div[2]/div[1]/div[2]/div[2]/div[2]/div/label[2]/span').click()  # ラジオボタン押下後の画面用 保険で
 
     # さらに表示ーーーーーーーーーー
@@ -70,7 +73,7 @@ def scrape_uber(area1, area2):
             # next_btn = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div/main/div/div/div[2]/div/button')))
             # sleep(1)
             next_btn.click()
-        except:
+        except Exception:
             next_btn = None
         print("next_btn")
 
@@ -161,6 +164,9 @@ def scrape_uber(area1, area2):
     created_list = []
     atode_list = []
 
+    # 一旦削除
+    models.Media_data.objects.filter(store__area=area_obj, media_type=media_type_obj).delete()
+
     for store in datalist:
         atode_flg = False
         atode_dict = {}
@@ -218,7 +224,12 @@ def scrape_uber(area1, area2):
         print('不採用は、')
         pp(not_adopted_list)
 
+    if input('clean_store_objする？y/n: ') == "y":
+        clean_store_obj(area_obj)
+
     print('作成は、')
     pp(created_list)
     print('デバッグリスト、')
     pp(debug_list)
+
+
