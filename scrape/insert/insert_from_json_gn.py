@@ -8,6 +8,9 @@ from pprint import pprint as pp
 from scrape import models
 from site_packages.my_module import store_model_process, atode_process
 
+# with open("/users/yutakakudo/downloads/gn_千葉県船橋市2021-06-11_1942.json") as f:
+#     jfile = json.load(f)
+# len(jfile)
 
 def insert_from_json_gn(file, area1, area2, media_type):
 
@@ -44,9 +47,13 @@ def insert_from_json_gn(file, area1, area2, media_type):
     for store_data in jfile:
         atode_dict = {}
         store_name = store_data["name"]
+        try:
+            yomigana = store_data["yomigana"]
+        except Exception:
+            yomigana = None
 
         # 店名でstore_object取得  1番近いものを探すーーーー
-        store_obj, _atode_flg, _atode_dict, _created_list = store_model_process(area_obj, media_type, store_name, ignore_list)
+        store_obj, _atode_flg, _atode_dict, _created_list = store_model_process(area_obj, media_type, store_name, ignore_list, yomigana=yomigana)
 
         atode_flg = _atode_flg
         atode_dict.update(_atode_dict)

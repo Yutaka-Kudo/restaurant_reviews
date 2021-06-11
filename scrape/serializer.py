@@ -47,7 +47,7 @@ class StoreSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Store
-        fields = ("id", "store_name", "store_name_gn", "store_name_hp", "store_name_tb", "store_name_retty", "store_name_demaekan", "store_name_uber", "store_name_google", "area", "phone_number", "category1", "category2", "category3")
+        fields = ("id", "store_name", "store_name_gn", "store_name_hp", "store_name_tb", "store_name_retty", "store_name_demaekan", "store_name_uber", "store_name_google", "area", "phone_number", "category1", "category2", "category3","yomigana")
 
 
 class Media_dataSerializer(serializers.ModelSerializer):

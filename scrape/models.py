@@ -19,6 +19,7 @@ class Media_type(models.Model):
 
 class Store(models.Model):
     store_name = models.CharField("店名", max_length=100, default="name")
+    yomigana = models.CharField("ヨミガナ", max_length=100, null=True, blank=True)
     store_name_gn = models.CharField("店名gn", max_length=100, null=True, blank=True)
     store_name_hp = models.CharField("店名hp", max_length=100, null=True, blank=True)
     store_name_tb = models.CharField("店名tb", max_length=100, null=True, blank=True)
