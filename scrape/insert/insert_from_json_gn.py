@@ -8,9 +8,12 @@ from pprint import pprint as pp
 from scrape import models
 from site_packages.my_module import store_model_process, atode_process
 
-# with open("/users/yutakakudo/downloads/gn_千葉県船橋市2021-06-11_1942.json") as f:
+# with open("/users/yutakakudo/downloads/google_千葉県_松戸市_2021-06-12_1408.json") as f:
 #     jfile = json.load(f)
 # len(jfile)
+# jfile[0]["review"]
+# for i in jfile:
+#     print(i["name"])
 
 def insert_from_json_gn(file, area1, area2, media_type):
 
@@ -84,7 +87,7 @@ def insert_from_json_gn(file, area1, area2, media_type):
                         models.Review.objects.filter(media=media_obj).delete()
                         print('ReviewObj delete for renewal')
 
-                    debug(rev["review_point"], rev["date"], title=rev["title"])
+                    debug(rev["review_point"], rev["date"], rev["title"])
                     models.Review.objects.update_or_create(
                         media=media_obj, title=rev["title"], defaults={
                             "content": rev["content"],
@@ -104,7 +107,8 @@ def insert_from_json_gn(file, area1, area2, media_type):
                     atode_review_list.append(atode_review_dict)
 
             # atode処理ーーーーーーーーー
-            atode_dict["review"] = atode_review_list
+            if atode_flg:
+                atode_dict["review"] = atode_review_list
             # ーーーーーーーーーーーー
         except KeyError as e:
             print(type(e), e)
@@ -143,5 +147,5 @@ def insert_from_json_gn(file, area1, area2, media_type):
         pp(not_adopted_list)
 
 
-if __name__ == "__main__":
-    insert_from_json_gn()
+# if __name__ == "__main__":
+#     insert_from_json_gn()

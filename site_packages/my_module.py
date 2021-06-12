@@ -566,7 +566,7 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
 
 # media_dataのないstoreを掃除ーーーーーーーーー
-area_obj = models.Area.objects.get(area_name="千葉県 市川市")
+# area_obj = models.Area.objects.get(area_name="千葉県 市川市")
 
 
 def clean_store_obj(area_obj):

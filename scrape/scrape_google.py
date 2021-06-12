@@ -52,6 +52,7 @@ def scrape_google(area1, area2, page_range):
     dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
 
     driver.get('https://google.com/')
+    driver.current_url
 
     area_input = driver.find_element_by_css_selector('body > div > div:nth-child(3) > form > div > div > div > div > div:nth-child(2) > input')
     area_input.send_keys(f'{area1+area2} 飲食店' + Keys.ENTER)
