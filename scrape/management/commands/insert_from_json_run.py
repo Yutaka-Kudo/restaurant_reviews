@@ -8,7 +8,7 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
     def handle(self, *args, **options):
 
         file = "/Users/yutakakudo/Downloads/"\
-            "gn_千葉県_船橋市_2021-06-13_1852.json"
+            "gn_千葉県_松戸市_2021-06-13_0149.json"
 
         area1 = file.split('_')[1]
         area2 = file.split('_')[2]
@@ -25,6 +25,6 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
         # elif media_type == "google":
         #     insert_from_json_google(file, area1, area2, media_type)
         # elif media_type == "hp":
-            # insert_from_json_hp(file, area1, area2, media_type)
+        # insert_from_json_hp(file, area1, area2, media_type)
 
         # return super().handle(*args, **options)

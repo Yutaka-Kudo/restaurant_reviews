@@ -3,8 +3,6 @@ from googletrans import Translator
 from janome.tokenizer import Tokenizer
 import pykakasi
 
-
-# import datetime
 from devtools import debug
 from pprint import pprint as pp
 
@@ -16,6 +14,10 @@ from site_packages.my_module import store_model_process, atode_process
 # gn,tb=models.Media_data.objects.filter(store__store_name="ビアホフ 船橋FACE店")
 # models.Review.objects.filter(media=gn)
 # models.Review.objects.filter(media=tb)
+# with open("/users/yutakakudo/downloads/gn_千葉県_船橋市_2021-06-13_1857.json") as f:
+#     jfile = json.load(f)
+# for i in jfile:
+#     print(i["name"])
 
 
 def insert_from_json(file, area1: str, area2: str, media_type: str):
@@ -28,19 +30,18 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
     media_type_obj = models.Media_type.objects.get(media_type=media_type)
 
     # area登録ーーーーーーーーーーーーー
-    kakasi_hira = pykakasi.kakasi()
-    kakasi_hira.setMode("J", "H")
-    kakasi_hira.setMode("K", "H")
-    converter_hira = kakasi_hira.getConverter()
-    area_hira = converter_hira.do(area1+" "+area2)
+    kakasi = pykakasi.kakasi()
 
-    kakasi_roma = pykakasi.kakasi()
-    kakasi_roma.setMode("H", "a")
-    converter_roma = kakasi_roma.getConverter()
-    area_roma = converter_roma.do(area_hira)
+    area_name = area1+" "+area2
+
+    area_hira = kakasi.convert(area1+" "+area2)
+    area_hira = "".join([s["hira"] for s in area_hira])
+
+    area_roma = kakasi.convert(area_hira)
+    area_roma = "".join([s["hepburn"] for s in area_roma])
 
     area_obj, _ = models.Area.objects.update_or_create(
-        area_name=area1+" "+area2,
+        area_name=area_name,
         defaults={
             "yomigana": area_hira,
             "yomi_roma": area_roma,
