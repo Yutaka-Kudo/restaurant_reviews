@@ -21,6 +21,7 @@ django-phonenumber-field = "*"
 selenium = "*"
 webdriver-manager = "*"
 pymysql = "*"
+pykakasi = "*"
 
 [dev-packages]
 flake8 = "*"

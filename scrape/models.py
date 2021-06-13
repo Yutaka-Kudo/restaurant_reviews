@@ -4,6 +4,8 @@ from django.db import models
 
 class Area(models.Model):
     area_name = models.CharField("地名",  max_length=100, default="area", unique=True)
+    yomigana = models.CharField("よみ",  max_length=100, null=True, blank=True)
+    yomi_roma = models.CharField("yomi",  max_length=100, null=True, blank=True)
 
     def __str__(self):
         return str(self.area_name)
@@ -19,7 +21,8 @@ class Media_type(models.Model):
 
 class Store(models.Model):
     store_name = models.CharField("店名", max_length=100, default="name")
-    yomigana = models.CharField("ヨミガナ", max_length=100, null=True, blank=True)
+    yomigana = models.CharField("よみがな", max_length=100, null=True, blank=True)
+    yomi_roma = models.CharField("yomigana", max_length=200, null=True, blank=True)
     store_name_gn = models.CharField("店名gn", max_length=100, null=True, blank=True)
     store_name_hp = models.CharField("店名hp", max_length=100, null=True, blank=True)
     store_name_tb = models.CharField("店名tb", max_length=100, null=True, blank=True)

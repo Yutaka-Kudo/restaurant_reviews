@@ -13,6 +13,8 @@ from janome.tokenizer import Tokenizer
 import difflib
 import re
 
+from site_packages.sub import regist_category
+
 
 def capture(driver):
     n = datetime.datetime.now()
@@ -121,8 +123,7 @@ class Compare_storeName:
         return store_kouho_dict
 
 
-# 店名でstore_object取得  1番近いものを探すーーーー
-def store_model_process(area_obj: models.Area, media_type: str, store_name: str, ignore_list: list, phone: str = "", category_list: list = None, yomigana: str = ""):
+def store_model_process(area_obj: models.Area, media_type: str, store_name: str, ignore_list: list, phone: str = "", category_list: list = None, yomigana: str = "", yomi_roma: str = ""):
 
     _atode_flg = False
     _atode_dict = {}
@@ -145,19 +146,14 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
         if yomigana:
             store_obj.yomigana = yomigana
             store_obj.save()
+        if yomi_roma:
+            store_obj.yomi_roma = yomi_roma
+            store_obj.save()
 
-            # カテゴリ登録
-            if category_list:
-                try:
-                    store_obj.category1 = category_list[0]
-                    store_obj.save()
-                    store_obj.category2 = category_list[1]
-                    store_obj.save()
-                    store_obj.category3 = category_list[2]
-                    store_obj.save()
-                    print('カテゴリ登録OK!')
-                except Exception as e:
-                    print(f'カテゴリ登録failed.. {e}')
+        # カテゴリ登録
+        if category_list:
+            regist_category(store_obj, category_list)
+
         print('get store_obj!!')
 
     else:
@@ -172,19 +168,15 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
             if yomigana:
                 store_obj.yomigana = yomigana
                 store_obj.save()
+            if yomi_roma:
+                store_obj.yomi_roma = yomi_roma
+                store_obj.save()
 
-                # カテゴリ登録
-                if category_list:
-                    try:
-                        store_obj.category1 = category_list[0]
-                        store_obj.save()
-                        store_obj.category2 = category_list[1]
-                        store_obj.save()
-                        store_obj.category3 = category_list[2]
-                        store_obj.save()
-                        print('カテゴリ登録OK!')
-                    except Exception as e:
-                        print(f'カテゴリ登録failed.. {e}')
+
+            # カテゴリ登録
+            if category_list:
+                regist_category(store_obj, category_list)
+
             print('get store_obj and update!!')
         else:
             print('third_attack!')
@@ -202,10 +194,11 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
                 _atode_dict["clean_name"] = sub_name_dict["clean_name"]
                 _atode_dict["clean_name_in_db"] = sub_name_dict["clean_name_in_db"]
 
-                # あれば
+                # あれば。なければ明示的にNoneをいれてる。
                 _atode_dict["phone"] = phone if phone else None
                 _atode_dict["category"] = category_list if category_list else None
                 _atode_dict["yomigana"] = yomigana if yomigana else None
+                _atode_dict["yomi_roma"] = yomi_roma if yomi_roma else None
 
             else:
                 store_obj, _ = models.Store.objects.get_or_create(store_name=store_name, area=area_obj)
@@ -214,25 +207,16 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
                 if yomigana:
                     store_obj.yomigana = yomigana
                     store_obj.save()
+                if yomi_roma:
+                    store_obj.yomi_roma = yomi_roma
+                    store_obj.save()
                 if phone:
                     store_obj.phone_number = phone
                     store_obj.save()
 
                 # カテゴリ登録
                 if category_list:
-                    try:
-                        store_obj.category1 = category_list[0]
-                        store_obj.save()
-                        print('カテゴリ登録1 OK!')
-                        store_obj.category2 = category_list[1]
-                        store_obj.save()
-                        print('カテゴリ登録2 OK!')
-                        store_obj.category3 = category_list[2]
-                        store_obj.save()
-                        print('カテゴリ登録3 OK!')
-                    except Exception as e:
-                        pass
-                        # print(f'カテゴリ登録failed.. {e}')
+                    regist_category(store_obj, category_list)
 
                 _created_list.append(store_name)
                 print('create store_obj!!')
@@ -248,13 +232,15 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
     update_list = []
     regist_list = []
-    problem_dict = {}
 
     debug(atode_list)
-    for i, store in enumerate(atode_list):
+
+    length = len(atode_list)
+    for store in atode_list:
         print(f'この名前: {store["store_name_site"]}  \nDBの名前: {store["store_name_db"]}\nclean   : {store["clean_name"]}\nclean_db: {store["clean_name_in_db"]}')
 
-        print(f"あと {len(atode_list)-i}")
+        length -= 1
+        print(f"あと {length}")
 
         def submit_update():
             submit = input('この名前ですか？y / N： ').lower()
@@ -278,282 +264,123 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                 return submit_update()
         submit_update()
 
-    if update_list:
-        for i, store in enumerate(update_list):
+    def update_or_regist(datalist, flg: str):
+        for store in datalist:
+            # store登録ーーーーーーーーーー
+            if flg == "update":
+                store_obj, _ = models.Store.objects.get_or_create(store_name=store["store_name_db"], area=area_obj)
+            elif flg == "regist":
+                store_obj, _ = models.Store.objects.get_or_create(store_name=store["store_name_site"], area=area_obj)
+            else:
+                store_obj = None
+                print('エラー')
+
+            # 店名
+            store_obj.update_name(store["store_name_site"], media_type)
+            if media_type == "tb":  # 食べログの名前を正式名称にする
+                store_obj.update_name(store["store_name_site"])
+
+            # よみがな
+            if store["yomigana"]:
+                try:
+                    store_obj.yomigana = store["yomigana"]
+                    store_obj.save()
+                except Exception as e:
+                    errorlist.append((type(e), e, store["yomigana"]))
+            # よみがなローマ字
+            if store["yomi_roma"]:
+                try:
+                    store_obj.yomigana = store["yomi_roma"]
+                    store_obj.save()
+                except Exception as e:
+                    errorlist.append((type(e), e, store["yomi_roma"]))
+
+            # 電話
+            if store["phone"]:
+                try:
+                    store_obj.phone_number = store["phone"]
+                    store_obj.save()
+                except KeyError as e:
+                    errorlist.append((type(e), e, store["phone"]))
+
+            # カテゴリ登録
+            if store["category"]:
+                regist_category(store_obj, store["category"], errorlist)
+
+            # media_data登録ーーーーーー
+            media_obj, _ = models.Media_data.objects.update_or_create(
+                store=store_obj, media_type=media_type_obj
+            )
+
             try:
-                store_obj = models.Store.objects.get(store_name=store["store_name_db"], area=area_obj)
-                store_obj.update_name(store["store_name_site"], media_type)
-                if media_type == "tb":  # 食べログの名前を正式名称にする
-                    store_obj.update_name(store["store_name_site"])
+                media_obj.rate = store["rate"]
+                media_obj.save()
+            except Exception as e:
+                errorlist.append((type(e), e, store["rate"]))
 
-                # よみがな
-                if store["yomigana"]:
-                    try:
-                        store_obj.yomigana = store["yomigana"]
-                        store_obj.save()
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["yomigana"]))
+            try:
+                media_obj.url = store["url"]
+                media_obj.save()
+            except KeyError as e:
+                errorlist.append((type(e), e, store["url"]))
 
-                # 電話
-                if store["phone"]:
-                    try:
-                        store_obj.phone_number = store["phone"]
-                        store_obj.save()
-                    except KeyError as e:
-                        errorlist.append((type(e), e, store["phone"]))
+            try:
+                media_obj.review_count = store["review_count"]
+                media_obj.save()
+            except KeyError as e:
+                errorlist.append((type(e), e, store["review_count"]))
 
-                # カテゴリ登録
-                if store["category"]:
-                    try:
-                        attrs = [
-                            store_obj.category1,
-                            store_obj.category2,
-                            store_obj.category3
-                        ]
-                        for categnum, categ in enumerate(store["category"]):
-                            attrs[categnum] = categ
-                        store_obj.save()
+            # review登録ーーーーーーーー
+            first_flg = True
+            for review in store["review"]:
 
-                        print('カテゴリ登録OK!')
-                    except Exception as e:
-                        print(f'カテゴリ登録failed.. {e}')
-                        errorlist.append((type(e), e, store["category"]))
+                if flg == "update" and first_flg:
+                    models.Review.objects.filter(media=media_obj).delete()
+                    print('ReviewObj delete for renewal')
+                    first_flg = False
 
-                media_obj, _ = models.Media_data.objects.update_or_create(
-                    store=store_obj, media_type=media_type_obj,
-                    defaults={
-                        "rate": store["rate"],
-                    }
+                review_obj, _ = models.Review.objects.update_or_create(
+                    media=media_obj, content=review["content"]
                 )
-                try:
-                    media_obj.url = store["store_url"]
-                    media_obj.save()
-                except KeyError as e:
-                    errorlist.append((type(e), e, store["store_url"]))
 
-                try:
-                    media_obj.review_count = store["review_count"]
-                    media_obj.save()
-                except KeyError as e:
-                    errorlist.append((type(e), e, store["review_count"]))
-
-                if media_type == "tb":
+                if review["title"]:
                     try:
-                        for i, review in enumerate(store["review"]):
-                            if i == 0:
-                                models.Review.objects.filter(media=media_obj).delete()
-                                print('ReviewObj delete for renewal')
-                            models.Review.objects.update_or_create(
-                                media=media_obj, title=review["title"], defaults={
-                                    "content": review["content"],
-                                    "review_date": review["date"],
-                                    "log_num_byTabelog": review["log_num"],
-                                    "review_point": review["review_point"],
-                                }
-                            )
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["review"]))
-                        print(type(e), e)
+                        review_obj.title = review["title"]
+                        review_obj.save()
+                    except KeyError as e:
+                        errorlist.append((type(e), e, review["title"]))
 
-                elif media_type == "google":
+                if review["date"]:
                     try:
-                        for i, review in enumerate(store["review"]):
-                            if i == 0:
-                                models.Review.objects.filter(media=media_obj).delete()
-                                print('ReviewObj delete for renewal')
-                            models.Review.objects.update_or_create(
-                                media=media_obj, content=review["content"], defaults={
-                                    "review_date": review["date"],
-                                    "review_point": review["review_point"],
-                                }
-                            )
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["review"]))
-                        print(type(e), e)
+                        review_obj.review_date = review["date"]
+                        review_obj.save()
+                    except KeyError as e:
+                        errorlist.append((type(e), e, review["date"]))
 
-                elif media_type == "gn":
+                if review["log_num"]:
                     try:
-                        for i, review in enumerate(store["review"]):
-                            if i == 0:
-                                models.Review.objects.filter(media=media_obj).delete()
-                                print('ReviewObj delete for renewal')
-                            models.Review.objects.update_or_create(
-                                media=media_obj, title=review["title"], defaults={
-                                    "content": review["content"],
-                                    "review_date": review["date"],
-                                    "review_point": review["review_point"],
-                                }
-                            )
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["review"]))
-                        print(type(e), e)
+                        review_obj.log_num_byTabelog = review["log_num"]
+                        review_obj.save()
+                    except KeyError as e:
+                        errorlist.append((type(e), e, review["log_num"]))
 
-                elif media_type == "hp":
+                if review["review_point"]:
                     try:
-                        for i, review in enumerate(store["review"]):
-                            if i == 0:
-                                models.Review.objects.filter(media=media_obj).delete()
-                                print('ReviewObj delete for renewal')
-                            models.Review.objects.update_or_create(
-                                media=media_obj, content=review["content"], defaults={
-                                    "review_date": review["date"],
-                                }
-                            )
-                        # review_count = len(models.Review.objects.filter(media=media_obj))
-                        # media_obj.review_count = review_count
-                        # media_obj.save()
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["review"]))
-                        print(type(e), e)
+                        review_obj.review_point = review["review_point"]
+                        review_obj.save()
+                    except KeyError as e:
+                        errorlist.append((type(e), e, review["review_point"]))
 
-                elif media_type == "demaekan":
-                    pass
-
-                elif media_type == "retty":
-                    pass
-
+            if flg == "update":
                 print('update OK!')
-            except Exception as e:
-                store["problem"] = e
-                problem_dict[f"update {i}"] = store
-
-    if regist_list:
-        for i, store in enumerate(regist_list):
-            try:
-                store_obj, _ = models.Store.objects.get_or_create(
-                    store_name=store["store_name_site"],
-                    area=area_obj,
-                )
-                store_obj.update_name(store["store_name_site"], media_type)
-
-                # よみがな
-                if store["yomigana"]:
-                    try:
-                        store_obj.yomigana = store["yomigana"]
-                        store_obj.save()
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["yomigana"]))
-
-                # 電話
-                if store["phone"]:
-                    try:
-                        store_obj.phone_number = store["phone"]
-                        store_obj.save()
-                    except KeyError as e:
-                        errorlist.append((type(e), e, store["phone"]))
-
-
-
-
-                # カテゴリ登録
-                if store["category"]:
-                    try:
-                        attrs = [
-                            store_obj.category1,
-                            store_obj.category2,
-                            store_obj.category3
-                        ]
-                        for categnum, categ in enumerate(store["category"]):
-                            attrs[categnum] = categ
-                        store_obj.save()
-                        print('カテゴリ登録OK!')
-                    except Exception as e:
-                        print(f'カテゴリ登録failed.. {e}')
-                        errorlist.append((type(e), e, store["category"]))
-
-
-                media_obj, _ = models.Media_data.objects.get_or_create(
-                    store=store_obj,
-                    media_type=media_type_obj,
-                )
-                try:
-                    media_obj.rate = store["rate"]
-                    media_obj.save()
-                except Exception as e:
-                    errorlist.append((type(e), e, store["rate"]))
-
-                try:
-                    media_obj.url = store["store_url"]
-                    media_obj.save()
-                except Exception as e:
-                    errorlist.append((type(e), e, store["store_url"]))
-
-                try:
-                    media_obj.review_count = store["review_count"]
-                    media_obj.save()
-                except Exception as e:
-                    errorlist.append((type(e), e, store["review_count"]))
-
-
-                # レビューーーーーーーーーーー
-                if media_type == "tb":
-                    try:
-                        for review in store["review"]:
-                            models.Review.objects.update_or_create(
-                                media=media_obj, title=review["title"],
-                                defaults={
-                                    "content": review["content"],
-                                    "review_date": review["date"],
-                                    "log_num_byTabelog": review["log_num"],
-                                    "review_point": review["review_point"],
-                                }
-                            )
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["review"]))
-                        print(type(e), e)
-                elif media_type == "google":
-                    try:
-                        for review in store["review"]:
-                            # googleは保険かけてレビュー2周するのでupdate_or_createで。
-                            models.Review.objects.update_or_create(
-                                media=media_obj, content=review["content"],
-                                defaults={
-                                    "review_date": review["date"],
-                                    "review_point": review["review_point"],
-                                }
-                            )
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["review"]))
-                        print(type(e), e)
-                        print("本文:::" + review["content"])
-                elif media_type == "gn":
-                    try:
-                        for review in store["review"]:
-                            models.Review.objects.update_or_create(
-                                media=media_obj, content=review["content"],
-                                defaults={
-                                    "title": review["title"],
-                                    "review_date": review["date"],
-                                    "review_point": review["review_point"],
-                                }
-                            )
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["review"]))
-                        print(type(e), e)
-                elif media_type == "hp":
-                    try:
-                        for review in store["review"]:
-                            models.Review.objects.update_or_create(
-                                media=media_obj, content=review["content"],
-                                defaults={
-                                    "review_date": review["date"],
-                                }
-                            )
-                    except Exception as e:
-                        errorlist.append((type(e), e, store["review"]))
-                        print(type(e), e)
-                    pass
-                elif media_type == "retty":
-                    pass
-                elif media_type == "demaekan":
-                    pass
-
-                print('regist OK!')
+            elif flg == "regist":
                 _created_list.append(store["store_name_site"])
+                print('regist OK!')
 
-            except Exception as e:
-                store["problem"] = e
-                problem_dict[f"regist {i}"] = store
+    if update_list:
+        update_or_regist(update_list, flg="update")
+    if regist_list:
+        update_or_regist(regist_list, flg="regist")
 
     if errorlist:
         print('write エラーログ')

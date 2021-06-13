@@ -33,8 +33,7 @@ class AreaSerializer(serializers.ModelSerializer):
 class Media_typeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Media_type
-        fields = ("id", "media_type", "official_name")
-
+        fields = '__all__'
 
 # class Media_type_customSerializer(DynamicFieldsModelSerializer):
 #     class Meta:
@@ -47,8 +46,7 @@ class StoreSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Store
-        fields = ("id", "store_name", "store_name_gn", "store_name_hp", "store_name_tb", "store_name_retty", "store_name_demaekan", "store_name_uber", "store_name_google", "area", "phone_number", "category1", "category2", "category3","yomigana")
-
+        fields = '__all__'
 
 class Media_dataSerializer(serializers.ModelSerializer):
     store = StoreSerializer()
@@ -56,7 +54,7 @@ class Media_dataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Media_data
-        fields = ("id", "store", "media_type", "url", "rate", "review_count")
+        fields = '__all__'
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -64,4 +62,4 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ("id", "media", "title", "content", "review_date", "log_num_byTabelog", "review_point")
+        fields ='__all__'
