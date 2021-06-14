@@ -8,8 +8,7 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
     def handle(self, *args, **options):
 
         file = "/Users/yutakakudo/Downloads/"\
-            "gn_千葉県_松戸市_2021-06-13_0149.json"
-
+            "使用済/google_千葉県_銚子市_2021-06-13_2356.json"
         area1 = file.split('_')[1]
         area2 = file.split('_')[2]
         print(f"{area1} {area2}")

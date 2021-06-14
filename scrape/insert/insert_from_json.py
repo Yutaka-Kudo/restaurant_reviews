@@ -1,6 +1,6 @@
 import json
 from googletrans import Translator
-from janome.tokenizer import Tokenizer
+# from janome.tokenizer import Tokenizer
 import pykakasi
 
 from devtools import debug
@@ -110,6 +110,11 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         created_list += _created_list
 
         # media_data用ーーー
+        try:
+            collected = store_data["collected"]
+        except Exception:
+            collected = None
+
         url = store_data["url"]
         rate = store_data["rate"]
         review_count = store_data["review_count"]
@@ -118,12 +123,14 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             media_obj, _ = models.Media_data.objects.update_or_create(
                 store=store_obj, media_type=media_type_obj,
                 defaults={
+                    "collected": collected,
                     "url": url,
                     "rate": rate,
                     "review_count": review_count,
                 }
             )
         else:
+            atode_dict["collected"] = collected
             atode_dict["url"] = url
             atode_dict["rate"] = rate
             atode_dict["review_count"] = review_count

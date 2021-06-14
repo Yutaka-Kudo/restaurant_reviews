@@ -69,6 +69,7 @@ class Store(models.Model):
 class Media_data(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
     media_type = models.ForeignKey(Media_type, on_delete=models.CASCADE)
+    collected = models.DateField(null=True, blank=True)
     url = models.URLField(max_length=1000, null=True, blank=True)
     rate = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
     review_count = models.IntegerField("評価数", null=True, blank=True)

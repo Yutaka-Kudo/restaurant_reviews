@@ -12,6 +12,8 @@ from janome.analyzer import Analyzer
 from janome.tokenizer import Tokenizer
 import difflib
 import re
+import pykakasi
+
 
 from site_packages.sub import regist_category
 
@@ -133,6 +135,33 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
 
     compare = Compare_storeName()
 
+    def name_set(store_obj):
+        store_obj.update_name(store_name, media_type)
+        if media_type == "tb":
+            store_obj.update_name(store_name)
+
+        if yomigana:
+            store_obj.yomigana = yomigana
+            store_obj.save()
+        elif not store_obj.yomigana:
+            kakasi = pykakasi.kakasi()
+            name_hira = kakasi.convert(store_name)
+            name_hira = "".join([s["hira"] for s in name_hira])
+
+            store_obj.yomigana = name_hira
+            store_obj.save()
+
+        if yomi_roma:
+            store_obj.yomi_roma = yomi_roma
+            store_obj.save()
+        elif not store_obj.yomi_roma:
+            kakasi = pykakasi.kakasi()
+            name_roma = kakasi.convert(store_name)
+            name_roma = "".join([s["hepburn"] for s in name_roma])
+
+            store_obj.yomi_roma = name_roma
+            store_obj.save()
+
     print("----------------\n" + store_name)
     print('first_attack!')
     store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media=media_type, min_ratio=0.85)  # mediaごとの名前で照会。同じメディアでも名前が微妙に変わることがあるので完全一致で探さない。
@@ -140,15 +169,7 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
         # debug(store_kouho_dict)
         store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
 
-        store_obj.update_name(store_name, media_type)
-        if media_type == "tb":
-            store_obj.update_name(store_name)
-        if yomigana:
-            store_obj.yomigana = yomigana
-            store_obj.save()
-        if yomi_roma:
-            store_obj.yomi_roma = yomi_roma
-            store_obj.save()
+        name_set(store_obj)
 
         # カテゴリ登録
         if category_list:
@@ -162,16 +183,8 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
         if store_kouho_dict:
             debug(store_kouho_dict)
             store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
-            store_obj.update_name(store_name, media_type)
-            if media_type == "tb":
-                store_obj.update_name(store_name)
-            if yomigana:
-                store_obj.yomigana = yomigana
-                store_obj.save()
-            if yomi_roma:
-                store_obj.yomi_roma = yomi_roma
-                store_obj.save()
 
+            name_set(store_obj)
 
             # カテゴリ登録
             if category_list:
@@ -203,14 +216,9 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
             else:
                 store_obj, _ = models.Store.objects.get_or_create(store_name=store_name, area=area_obj)
 
-                store_obj.update_name(store_name, media_type)
-                if yomigana:
-                    store_obj.yomigana = yomigana
-                    store_obj.save()
-                if yomi_roma:
-                    store_obj.yomi_roma = yomi_roma
-                    store_obj.save()
-                if phone:
+                name_set(store_obj)
+
+                if phone:  # 電話は不用意に変えたくないので新規登録時だけ
                     store_obj.phone_number = phone
                     store_obj.save()
 
@@ -237,6 +245,7 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
     length = len(atode_list)
     for store in atode_list:
+        print(' ')
         print(f'この名前: {store["store_name_site"]}  \nDBの名前: {store["store_name_db"]}\nclean   : {store["clean_name"]}\nclean_db: {store["clean_name_in_db"]}')
 
         length -= 1
@@ -265,6 +274,7 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
         submit_update()
 
     def update_or_regist(datalist, flg: str):
+        length = len(datalist)
         for store in datalist:
             # store登録ーーーーーーーーーー
             if flg == "update":
@@ -311,6 +321,13 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             media_obj, _ = models.Media_data.objects.update_or_create(
                 store=store_obj, media_type=media_type_obj
             )
+
+            if store["collected"]:
+                try:
+                    media_obj.collected = store["collected"]
+                    media_obj.save()
+                except Exception as e:
+                    errorlist.append((type(e), e, store["collected"]))
 
             try:
                 media_obj.rate = store["rate"]
@@ -377,6 +394,9 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                 _created_list.append(store["store_name_site"])
                 print('regist OK!')
 
+            length -= 1
+            print(f'あと {length}')
+
     if update_list:
         update_or_regist(update_list, flg="update")
     if regist_list:
@@ -407,21 +427,24 @@ def clean_store_obj(area_obj):
 
 
 # 重複を統合ーーーーーーーーーー
+
+
 def conflict_integration():
     # area = "千葉県 船橋市"
     area = "千葉県 千葉市"
-    store: str = "和伊きっちん itAPAn"  # 親
-    target_store: str = "おおすぎ大衆酒場"  # 子
-    target_media_type: str = "google"
+    store: str = "魚民 原木中山南口駅前店"  # 親
+    target_store: str = "湯葉豆富料理魚民 原木中山南口駅前店"  # 子
+    target_media_type: str = "gn"
 
     # target_store_obj = models.Store.objects.get(store_name=target_store)
     target_store_obj = models.Store.objects.get(store_name=target_store, area__area_name=area)
-    exec(f"target_store_name_by_media = target_store_obj.store_name_{target_media_type}")
+    target_store_name_by_media = getattr(target_store_obj, f"store_name_{target_media_type}")
     target_m_type_obj = models.Media_type.objects.get(media_type=target_media_type)
     target_m_data_obj = models.Media_data.objects.get(store=target_store_obj, media_type=target_m_type_obj)
     target_r_objs = models.Review.objects.filter(media=target_m_data_obj)
 
     # 親
+    # store_obj = models.Store.objects.filter(store_name=store)
     store_obj = models.Store.objects.get(store_name=store, area__area_name=area)
     store_obj.update_name(target_store_name_by_media, target_media_type)  # 各メディア用名前
     m_data_obj, _ = models.Media_data.objects.update_or_create(store=store_obj, media_type=target_m_type_obj)  # media_dataなければ作る
