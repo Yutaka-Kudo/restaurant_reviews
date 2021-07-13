@@ -1,7 +1,7 @@
 from scrape.serializer import AreaSerializer
 from django.urls import path
 from rest_framework import routers
-from scrape.views import AreaViewSet, Media_typeViewSet, StoreViewSet, Media_dataViewSet, ReviewViewSet
+from scrape.views import Area_majorViewSet, AreaViewSet, Media_typeViewSet, StoreViewSet,StoreSearchViewSet, Media_dataViewSet, ReviewViewSet
 # , Area_customViewSet, Media_type_customViewSet
 
 from scrape import views
@@ -14,9 +14,11 @@ urlpatterns = [
 
 
 router = routers.DefaultRouter()
+router.register(r'area_major', Area_majorViewSet)
 router.register(r'area', AreaViewSet)
 router.register(r'media_type', Media_typeViewSet)
 router.register(r'stores', StoreViewSet)
+router.register(r'stores_search', StoreSearchViewSet)
 router.register(r'media_data', Media_dataViewSet)
 router.register(r'reviews', ReviewViewSet)
 

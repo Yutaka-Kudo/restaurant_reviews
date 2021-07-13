@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from scrape.models import Area, Media_type, Store, Media_data, Review
+from scrape.models import Area_major, Area, Media_type, Store, Media_data, Review
 
 
 # class DynamicFieldsModelSerializer(serializers.ModelSerializer):
@@ -22,6 +22,12 @@ from scrape.models import Area, Media_type, Store, Media_data, Review
 #             existing = set(self.fields)
 #             for field_name in existing - allowed:
 #                 self.fields.pop(field_name)
+
+
+class Area_majorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area_major
+        fields = '__all__'
 
 
 class AreaSerializer(serializers.ModelSerializer):
@@ -48,6 +54,7 @@ class StoreSerializer(serializers.ModelSerializer):
         model = Store
         fields = '__all__'
 
+
 class Media_dataSerializer(serializers.ModelSerializer):
     store = StoreSerializer()
     media_type = Media_typeSerializer()
@@ -62,4 +69,4 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields ='__all__'
+        fields = '__all__'

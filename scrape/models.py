@@ -2,10 +2,21 @@ from django.db import models
 # from phonenumber_field.modelfields import PhoneNumberField
 
 
+class Area_major(models.Model):
+    area_name = models.CharField("県名",  max_length=10, default="area", unique=True)
+    yomigana = models.CharField("よみ",  max_length=20, null=True, blank=True)
+    yomi_roma = models.CharField("yomi",  max_length=20, null=True, blank=True)
+
+    def __str__(self):
+        return str(self.area_name)
+
+
 class Area(models.Model):
+    major_area = models.ForeignKey(Area_major, on_delete=models.CASCADE, verbose_name="県名")
     area_name = models.CharField("地名",  max_length=100, default="area", unique=True)
     yomigana = models.CharField("よみ",  max_length=100, null=True, blank=True)
     yomi_roma = models.CharField("yomi",  max_length=100, null=True, blank=True)
+    registed = models.IntegerField("登録数", null=True, blank=True)
 
     def __str__(self):
         return str(self.area_name)
@@ -35,26 +46,15 @@ class Store(models.Model):
     category1 = models.CharField(max_length=100, null=True, blank=True)
     category2 = models.CharField(max_length=100, null=True, blank=True)
     category3 = models.CharField(max_length=100, null=True, blank=True)
-
+    total_rate = models.DecimalField("総合レート",max_digits=3, decimal_places=2, null=True, blank=True)
+    total_review_count = models.IntegerField("総合評価数", null=True, blank=True)
+    address = models.CharField(max_length=100, null=True, blank=True)
+    
     def update_name(self, store_name: str, media: str = ""):
         if media == "":
             self.store_name = store_name
-        elif media == "gn":
-            self.store_name_gn = store_name
-        elif media == "hp":
-            self.store_name_hp = store_name
-        elif media == "tb":
-            self.store_name_tb = store_name
-        elif media == "retty":
-            self.store_name_retty = store_name
-        elif media == "demaekan":
-            self.store_name_demaekan = store_name
-        elif media == "uber":
-            self.store_name_uber = store_name
-        elif media == "google":
-            self.store_name_google = store_name
         else:
-            raise ValueError(f'media名が誤りです。{media}')
+            setattr(self, f'store_name_{media}', store_name)
         self.save()
 
     def __str__(self):

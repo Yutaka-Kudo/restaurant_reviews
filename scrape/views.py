@@ -1,15 +1,24 @@
 import django_filters
 from rest_framework import viewsets, filters
 
-from scrape.models import Area, Media_type, Store, Media_data, Review
-from scrape.serializer import AreaSerializer, Media_typeSerializer, StoreSerializer, Media_dataSerializer, ReviewSerializer
+from scrape.models import Area_major, Area, Media_type, Store, Media_data, Review
+from scrape.serializer import Area_majorSerializer, AreaSerializer, Media_typeSerializer, StoreSerializer, Media_dataSerializer, ReviewSerializer
 # , Media_type_customSerializer
 
 
+class Area_majorViewSet(viewsets.ModelViewSet):
+    queryset = Area_major.objects.all().order_by('yomigana')
+    serializer_class = Area_majorSerializer
+    filter_fields = ["id", "area_name", "yomigana", "yomi_roma"]
+
+
 class AreaViewSet(viewsets.ModelViewSet):
-    queryset = Area.objects.all().order_by('area_name')
+    queryset = Area.objects.all().order_by('yomigana')
     serializer_class = AreaSerializer
-    filter_fields = ['id', 'area_name']
+    # filter_fields = "__all__"
+    # __all__にするとidがきかなくなる
+    filter_fields = ["id", "area_name", "yomigana", "yomi_roma", "major_area"]
+
     # filter_backends = [filters.SearchFilter] # これをつけると普通のfilterが機能しない
     # search_fields = ["area_name"]
 
@@ -59,6 +68,14 @@ class StoreViewSet(viewsets.ModelViewSet):
     # search_fields = ["store_name", "store_name_gn", "store_name_hp", "store_name_tb", "store_name_retty", "store_name_demaekan", "store_name_uber", "store_name_google", "area__area_name"]  # 二重__はforeignKey等のリレーション
 
 
+class StoreSearchViewSet(viewsets.ModelViewSet):
+    queryset = Store.objects.all().order_by('store_name')
+    serializer_class = StoreSerializer
+    # filter_fields = ['id', 'area', "store_name"]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["store_name", "yomigana", "yomi_roma"]
+
+
 class Media_dataViewSet(viewsets.ModelViewSet):
     queryset = Media_data.objects.all()
     serializer_class = Media_dataSerializer
@@ -70,10 +87,9 @@ class Media_dataViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all().order_by('-review_date')
     serializer_class = ReviewSerializer
-    filter_fields = ['id', 'media']
+    filter_fields = ['id', 'media',"media__store"]
     # filter_backends = [filters.SearchFilter]
     # search_fields = ["media"]
-
 
 
 # from scrape.scrape_tb import scrape_tb
@@ -108,4 +124,3 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 #     # return super().handle(*args, **options)
 #     return HttpResponse('すくれぴ')
-

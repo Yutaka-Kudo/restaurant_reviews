@@ -1,5 +1,6 @@
 import datetime
 import os
+from decimal import Decimal
 from scrape import models
 from devtools import debug
 from selenium.webdriver.common.by import By
@@ -15,7 +16,7 @@ import re
 import pykakasi
 
 
-from site_packages.sub import regist_category
+from site_packages.sub import regist_category, chain_replace
 
 
 def capture(driver):
@@ -115,7 +116,7 @@ class Compare_storeName:
 
             ratio = difflib.SequenceMatcher(lambda x: x in [" ", "-"], clean_name, clean_name_in_db).ratio()  # 類似度
 
-            if ratio > min_ratio:
+            if ratio >= min_ratio:
                 # store_kouho_list.append(obj)
                 # ratio_list.append(ratio)
                 # debug(clean_name_in_db, ratio)
@@ -125,11 +126,12 @@ class Compare_storeName:
         return store_kouho_dict
 
 
-def store_model_process(area_obj: models.Area, media_type: str, store_name: str, ignore_list: list, phone: str = "", category_list: list = None, yomigana: str = "", yomi_roma: str = ""):
+def store_model_process(area_obj: models.Area, media_type: str, store_name: str, ignore_list: list, phone: str = "", address: str = "", category_list: list = None, yomigana: str = "", yomi_roma: str = "", first_time: bool = False):
 
     _atode_flg = False
     _atode_dict = {}
     _created_list = []
+    _chain_list = []
 
     store_objs = models.Store.objects.filter(area=area_obj)
 
@@ -145,9 +147,8 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
             store_obj.save()
         elif not store_obj.yomigana:
             kakasi = pykakasi.kakasi()
-            name_hira = kakasi.convert(store_name)
+            name_hira = kakasi.convert(store_name.strip().replace(' ', ''))
             name_hira = "".join([s["hira"] for s in name_hira])
-
             store_obj.yomigana = name_hira
             store_obj.save()
 
@@ -156,20 +157,51 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
             store_obj.save()
         elif not store_obj.yomi_roma:
             kakasi = pykakasi.kakasi()
-            name_roma = kakasi.convert(store_name)
+            name_roma = kakasi.convert(store_name.strip().replace(' ', ''))
             name_roma = "".join([s["hepburn"] for s in name_roma])
-
             store_obj.yomi_roma = name_roma
             store_obj.save()
+        
+    def address_set(store_obj):
+        if (address and not store_obj.address) or (address and media_type == "gn") or (address and media_type == "tb"):
+            store_obj.address = address
+            store_obj.save()
+
+    def regist_new():
+        store_obj, _ = models.Store.objects.get_or_create(store_name=store_name, area=area_obj)
+
+        name_set(store_obj)
+
+        if phone:  # 電話は不用意に変えたくないので新規登録時だけ
+            store_obj.phone_number = phone
+            store_obj.save()
+
+        address_set(store_obj)
+
+        # カテゴリ登録
+        if category_list:
+            regist_category(store_obj, category_list)
+
+        _created_list.append(store_name)
+        print('create store_obj!!')
+
+        return store_obj, _created_list
+
+    if first_time:
+        print('Its a first time!!!')
+        print("----------------\n" + store_name)
+        store_obj, _created_list = regist_new()
+        return store_obj, _atode_flg, _atode_dict, _created_list, _chain_list
 
     print("----------------\n" + store_name)
     print('first_attack!')
-    store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media=media_type, min_ratio=0.85)  # mediaごとの名前で照会。同じメディアでも名前が微妙に変わることがあるので完全一致で探さない。
+    store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media=media_type, min_ratio=1)  # mediaごとの名前で照会。同じメディアでも名前が微妙に変わることがあるので完全一致で探さない。← やっぱり完全一致で。
     if store_kouho_dict:
         # debug(store_kouho_dict)
         store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
 
         name_set(store_obj)
+        address_set(store_obj)
 
         # カテゴリ登録
         if category_list:
@@ -179,12 +211,13 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
 
     else:
         print('second_attack!')
-        store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media='', min_ratio=0.85)  # 今度はDB内の名前で照会
+        store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media='', min_ratio=0.9)  # 今度はDB内の名前で照会
         if store_kouho_dict:
             debug(store_kouho_dict)
             store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
 
             name_set(store_obj)
+            address_set(store_obj)
 
             # カテゴリ登録
             if category_list:
@@ -192,12 +225,42 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
 
             print('get store_obj and update!!')
         else:
+            # チェーン店の場合、メディアにより多少変わるので名前を替えて再検索
+            replaced_name = chain_replace(store_name)
+            if replaced_name:
+                _chain_list.append(replaced_name)
+                print('chain_attack!!!!')
+                store_kouho_dict = compare.search_store_name(replaced_name, store_objs, ignore_list, media='', min_ratio=0.9)
+                if store_kouho_dict:
+                    debug(store_kouho_dict)
+                    store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
+
+                    name_set(store_obj)
+                    address_set(store_obj)
+
+                    # カテゴリ登録
+                    if category_list:
+                        regist_category(store_obj, category_list)
+
+                    print('get store_obj and update!!')
+                    return store_obj, _atode_flg, _atode_dict, _created_list, _chain_list
+
             print('third_attack!')
             store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media='', min_ratio=0.4)  # 今度はDB内の名前で照会
             if store_kouho_dict:
+
                 debug(store_kouho_dict)
                 store_obj, sub_name_dict = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
                 debug(store_obj.store_name)
+
+                # 同メディアの名前があればスキップして新規作成
+                if getattr(store_obj, f"store_name_{media_type}"):
+                    if not media_type == "hp":
+                        new_store_obj, _created_list = regist_new()
+                        return new_store_obj, _atode_flg, _atode_dict, _created_list, _chain_list
+                    # HPだけあやしい
+                    else:
+                        _atode_dict["this_media_name"] = getattr(store_obj, f"store_name_{media_type}")
 
                 # あるか無いか微妙なラインなのでatodeシリーズにまとめで確認
                 print('atode...')
@@ -208,28 +271,17 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
                 _atode_dict["clean_name_in_db"] = sub_name_dict["clean_name_in_db"]
 
                 # あれば。なければ明示的にNoneをいれてる。
+                _atode_dict["address_db"] = store_obj.address if store_obj.address else None
+                _atode_dict["address_site"] = address if address else None
                 _atode_dict["phone"] = phone if phone else None
                 _atode_dict["category"] = category_list if category_list else None
                 _atode_dict["yomigana"] = yomigana if yomigana else None
                 _atode_dict["yomi_roma"] = yomi_roma if yomi_roma else None
 
             else:
-                store_obj, _ = models.Store.objects.get_or_create(store_name=store_name, area=area_obj)
+                store_obj, _created_list = regist_new()
 
-                name_set(store_obj)
-
-                if phone:  # 電話は不用意に変えたくないので新規登録時だけ
-                    store_obj.phone_number = phone
-                    store_obj.save()
-
-                # カテゴリ登録
-                if category_list:
-                    regist_category(store_obj, category_list)
-
-                _created_list.append(store_name)
-                print('create store_obj!!')
-
-    return store_obj, _atode_flg, _atode_dict, _created_list
+    return store_obj, _atode_flg, _atode_dict, _created_list, _chain_list
 
 
 def atode_process(atode_list: list, media_type: str, media_type_obj: models.Media_type, area_obj: models.Area):
@@ -241,33 +293,57 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
     update_list = []
     regist_list = []
 
-    debug(atode_list)
+    doubt_list = []
+
+    # debug(atode_list)
 
     length = len(atode_list)
     for store in atode_list:
         print(' ')
-        print(f'この名前: {store["store_name_site"]}  \nDBの名前: {store["store_name_db"]}\nclean   : {store["clean_name"]}\nclean_db: {store["clean_name_in_db"]}')
+        # print(f'この名前: {store["store_name_site"]}  \nDBの名前: {store["store_name_db"]}\nclean   : {store["clean_name"]}\nclean_db: {store["clean_name_in_db"]}')
+        try:
+            print(f'この住所    : {store["address_site"]}')
+            print(f'DBの住所    : {store["address_db"]}')
+            print(' ')
+        except Exception:
+            pass
+        print(f'この名前    : {store["store_name_site"]}')
+        try:
+            print(f'同メディア名: {store["this_media_name"]}')
+        except Exception:
+            pass
+        print(f'DBの名前    : {store["store_name_db"]}')
 
         length -= 1
         print(f"あと {length}")
 
+        def submit_regist(doubt=None):
+            regist = input('新規登録しますか？y / N: ').lower()
+            if regist == "y":
+                regist_list.append(store)
+                if doubt:
+                    doubt_list.append(f'この名前    : {store["store_name_site"]}')
+                    doubt_list.append(f'DBの名前    : {store["store_name_db"]}')
+
+            elif regist == "n":  # ゴミ箱いき
+                not_adopted_list.append(store["store_name_site"])
+                print('move not_adopted_list')
+            else:  # やり直し
+                if doubt:
+                    return submit_regist(doubt=True)
+                else:
+                    return submit_regist()
+
         def submit_update():
-            submit = input('この名前ですか？y / N： ').lower()
+            submit = input('この名前ですか？y / N or A： ').lower()
             if submit == "y":
                 update_list.append(store)
 
             elif submit == "n":
-                def submit_regist():
-                    regist = input('新規登録しますか？y / N: ').lower()
-                    if regist == "y":
-                        regist_list.append(store)
-
-                    elif regist == "n":  # ゴミ箱いき
-                        not_adopted_list.append(store["store_name_site"])
-                        print('move not_adopted_list')
-                    else:  # やり直し
-                        return submit_regist()
                 submit_regist()
+
+            elif submit == "a":
+                submit_regist(doubt=True)
 
             else:
                 return submit_update()
@@ -297,21 +373,46 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                     store_obj.save()
                 except Exception as e:
                     errorlist.append((type(e), e, store["yomigana"]))
+
+            elif not store_obj.yomigana:
+                kakasi = pykakasi.kakasi()
+                name_hira = kakasi.convert(store_obj.store_name)
+                name_hira = "".join([s["hira"] for s in name_hira])
+
+                store_obj.yomigana = name_hira
+                store_obj.save()
+
             # よみがなローマ字
             if store["yomi_roma"]:
                 try:
-                    store_obj.yomigana = store["yomi_roma"]
+                    store_obj.yomi_roma = store["yomi_roma"]
                     store_obj.save()
                 except Exception as e:
                     errorlist.append((type(e), e, store["yomi_roma"]))
 
+            elif not store_obj.yomi_roma:
+                kakasi = pykakasi.kakasi()
+                name_roma = kakasi.convert(store_obj.store_name)
+                name_roma = "".join([s["hepburn"] for s in name_roma])
+
+                store_obj.yomi_roma = name_roma
+                store_obj.save()
+
             # 電話
-            if store["phone"]:
+            if store["phone"] and not store_obj.phone_number:
                 try:
                     store_obj.phone_number = store["phone"]
                     store_obj.save()
                 except KeyError as e:
                     errorlist.append((type(e), e, store["phone"]))
+
+            # 住所
+            if (store["address_site"] and not store_obj.address) or (store["address_site"] and media_type == "gn") or (store["address_site"] and media_type == "tb"):
+                try:
+                    store_obj.address = store["address_site"]
+                    store_obj.save()
+                except KeyError as e:
+                    errorlist.append((type(e), e, store["address_site"]))
 
             # カテゴリ登録
             if store["category"]:
@@ -347,6 +448,35 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             except KeyError as e:
                 errorlist.append((type(e), e, store["review_count"]))
 
+            all_md = models.Media_data.objects.filter(store=store_obj)
+
+            # 店ごとのtotal_rate登録ーーーーー
+            rate_md = [md for md in all_md if md.media_type.__str__() in ["gn", "google", "tb", "uber"]]
+            rate_list, total_review_count = [], []
+            for md in rate_md:
+                if md.media_type.__str__() == "tb":  # 食べログ補正
+                    rate = md.rate + ((md.rate - Decimal("2.5")) * Decimal(".6"))
+                else:
+                    rate = md.rate
+                if md.review_count:
+                    rate_list.append(rate * md.review_count)
+                    total_review_count.append(md.review_count)
+            try:
+                total_rate = sum(rate_list) / sum(total_review_count)
+            except ZeroDivisionError:
+                total_rate = 0
+            store_obj.total_rate = total_rate
+            store_obj.save()
+
+            # 店ごとのtotal_review_count登録ーーーーー
+            rev_cnt_list = [md.review_count for md in all_md if md.review_count]
+            try:
+                total_review_count = sum(rev_cnt_list)
+            except ZeroDivisionError:
+                total_review_count = 0
+            store_obj.total_review_count = total_review_count
+            store_obj.save()
+
             # review登録ーーーーーーーー
             first_flg = True
             for review in store["review"]:
@@ -361,6 +491,11 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                 )
 
                 if review["title"]:
+
+                    # 長さ制限
+                    if len(review["title"]) > 100:
+                        review["title"] = review["title"][:100]
+
                     try:
                         review_obj.title = review["title"]
                         review_obj.save()
@@ -389,10 +524,11 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                         errorlist.append((type(e), e, review["review_point"]))
 
             if flg == "update":
-                print('update OK!')
+                print(f'update OK! {store["store_name_site"]}')
             elif flg == "regist":
                 _created_list.append(store["store_name_site"])
-                print('regist OK!')
+
+                print(f'regist OK! {store["store_name_site"]}')
 
             length -= 1
             print(f'あと {length}')
@@ -409,97 +545,4 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             for d in errorlist:
                 f.write(f"{d}\n")
 
-    return _created_list, not_adopted_list
-
-
-# media_dataのないstoreを掃除ーーーーーーーーー
-# area_obj = models.Area.objects.get(area_name="千葉県 市川市")
-
-
-def clean_store_obj(area_obj):
-    store_objs = models.Store.objects.filter(area=area_obj)
-    count = len(store_objs)
-    for s in store_objs:
-        if len(models.Media_data.objects.filter(store=s)) == 0:
-            s.delete()
-        print(f"count あと {count}")
-        count -= 1
-
-
-# 重複を統合ーーーーーーーーーー
-
-
-def conflict_integration():
-    # area = "千葉県 船橋市"
-    area = "千葉県 千葉市"
-    store: str = "魚民 原木中山南口駅前店"  # 親
-    target_store: str = "湯葉豆富料理魚民 原木中山南口駅前店"  # 子
-    target_media_type: str = "gn"
-
-    # target_store_obj = models.Store.objects.get(store_name=target_store)
-    target_store_obj = models.Store.objects.get(store_name=target_store, area__area_name=area)
-    target_store_name_by_media = getattr(target_store_obj, f"store_name_{target_media_type}")
-    target_m_type_obj = models.Media_type.objects.get(media_type=target_media_type)
-    target_m_data_obj = models.Media_data.objects.get(store=target_store_obj, media_type=target_m_type_obj)
-    target_r_objs = models.Review.objects.filter(media=target_m_data_obj)
-
-    # 親
-    # store_obj = models.Store.objects.filter(store_name=store)
-    store_obj = models.Store.objects.get(store_name=store, area__area_name=area)
-    store_obj.update_name(target_store_name_by_media, target_media_type)  # 各メディア用名前
-    m_data_obj, _ = models.Media_data.objects.update_or_create(store=store_obj, media_type=target_m_type_obj)  # media_dataなければ作る
-
-    try:
-        m_data_obj.url = target_m_data_obj.url
-        m_data_obj.save()
-    except Exception:
-        pass
-    try:
-        m_data_obj.rate = target_m_data_obj.rate
-        m_data_obj.save()
-    except Exception:
-        pass
-    try:
-        m_data_obj.review_count = target_m_data_obj.review_count
-        m_data_obj.save()
-    except Exception:
-        pass
-
-    for o in target_r_objs:
-        r_obj, _ = models.Review.objects.update_or_create(
-            media=m_data_obj, content=o.content
-        )
-        try:
-            r_obj.title = o.title
-            r_obj.save()
-        except Exception:
-            pass
-        try:
-            r_obj.review_date = o.review_date
-            r_obj.save()
-        except Exception:
-            pass
-        try:
-            r_obj.log_num_byTabelog = o.log_num_byTabelog
-            r_obj.save()
-        except Exception:
-            pass
-        try:
-            r_obj.review_point = o.review_point
-            r_obj.save()
-        except Exception:
-            pass
-
-    if input('media_dataとstore_name_by_media消す？y/n: ') == "y":
-        target_m_data_obj.delete()
-        exec(f"target_store_obj.store_name_{target_media_type} = ''")
-        target_store_obj.save()
-
-    if input('store消す？y/n: ') == "y":
-        target_store_obj.delete()
-
-
-# for t in target_r_objs:
-#     print()
-# target_r_objs[6].content
-# len(target_r_objs)
+    return _created_list, not_adopted_list, doubt_list

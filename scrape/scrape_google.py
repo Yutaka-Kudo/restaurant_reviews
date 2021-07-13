@@ -63,18 +63,40 @@ def scrape_google(area1, area2, page_range):
     created_list = []
     atode_list = []
 
+    first_page_flg = True
+    page_end_flg = False
+
     try:
         debug_list = []
         first_page_flg = True
 
         for page_num in page_range:  # ページーーーーーーーーーーーーー
+            print('ぺーーーーーじーーーーーーーー')
             debug(page_num)
-            try:
-                driver.find_element_by_xpath(f"//a[@aria-label='Page {page_num}']").click()
-                # driver.find_element_by_link_text('次へ').click()
-                # driver.refresh()
-            except Exception:
-                pass
+
+            # 大きいページ番号からスタートの際のページ送り
+            # googleの場合、1ページごとにリロードしなくちゃならないので
+            if page_num != 1:
+                # 8以上なら目的のページ数まで送る
+                if page_num >= 8:
+                    this_page = 8
+                    try:
+                        while page_num >= this_page:
+                            driver.find_element_by_xpath(f"//a[@aria-label='Page {this_page}']").click()
+                            print(f'ページ移動中...{this_page}')
+                            sleep(2)
+                            this_page += 1
+                    except Exception:
+                        page_end_flg = True
+                        break
+                # 8未満ならそのままいける
+                else:
+                    try:
+                        driver.find_element_by_xpath(f"//a[@aria-label='Page {page_num}']").click()
+                    except Exception:
+                        page_end_flg = True
+                        break
+
             sleep(3)
 
             # 1ページ目の広告枠＋3個のあとにおすすめページに誘われるのでそこをスルー

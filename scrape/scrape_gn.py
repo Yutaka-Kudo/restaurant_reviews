@@ -1,175 +1,385 @@
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import NoSuchElementException
-from time import sleep
-from bs4 import BeautifulSoup
-from googletrans import Translator
-
-import datetime
-from devtools import debug
+import pykakasi
+import json
 from pprint import pprint as pp
+import pytz
+import datetime
+from bs4 import BeautifulSoup
+from time import sleep
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.keys import Keys
+from selenium import webdriver
+import random
 
-from scrape import driver_settings
-from scrape import models
-from site_packages.my_module import *
-
-# area1 = "千葉県"
-# area2 = "船橋市"
-# area2 = "千葉市"
-
-media_type = "gn"
-
-# area_obj = models.Area.objects.get(area_name="千葉県 船橋市")
-# store_obj = models.Store.objects.filter(store_name__icontains="四季", area=area_obj)[2]
-# media_type_obj = models.Media_type.objects.get(media_type='tb')
-# media_obj = models.Media_data.objects.get(store=store_obj, media_type=media_type_obj)
-# media_obj = models.Media_data.objects.get(store=store_obj)
-# review_obj = models.Review.objects.filter(media=media_obj)
-
-# media_obj
+def scrape_gn():
+    options = webdriver.ChromeOptions()
+    # options.add_argument('--headless')
+    # options.add_argument('--disable-dev-shm-usage')
 
 
-def scrape_gn(area1, area2, page_range):
-    print(area1+" "+area2)
-    media_type_obj = models.Media_type.objects.get(media_type=media_type)
-    area_obj, _ = models.Area.objects.get_or_create(area_name=area1+" "+area2)
+    user_agent = [
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.2 Safari/605.1.15',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Safari/605.1.15',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.2 Safari/605.1.15',
+        # 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36',
+        ''
+    ]
+    # options.add_argument('--user-data-dir=' + profile_path)
+    now_ua = user_agent[random.randrange(0, len(user_agent), 1)]
+    options.add_argument('--user-agent=' + now_ua)
+    options.add_argument('--disable-desktop-notifications')
+    options.add_argument("--disable-extensions")
+    options.add_argument('--lang=ja')
+    options.add_argument('--blink-settings=imagesEnabled=false')  # 画像なし
+    options.add_argument('--no-sandbox')
+    # options.binary_location = '/usr/bin/google-chrome'
+    options.add_argument('--proxy-bypass-list=*')      # すべてのホスト名
+    options.add_argument('--proxy-server="direct://"')  # Proxy経由ではなく直接接続する
+    # if chrome_binary_path:
+    #     options.binary_location = chrome_binary_path
+    # options.add_argument('--single-process')
+    # options.add_argument('--disable-application-cache')
+    # options.add_argument('--ignore-certificate-errors')
+    # options.add_argument('--start-maximized')
 
-    def create_ignoreList():
-        area1_word = area1[:-1]
-        area2_word = area2 if area1 == "東京都" else area2[:-1]
-        ignore_list = [' ', area1_word, area2_word, "店", "個室", "居酒屋"]
-        # ignore_listに英語も入れる
-        tr = Translator()
-        # del ignore_list[0] # 最初に入ってる空白を消す
-        add_ignore = []
-        for src in ignore_list[1:]:
-            try:
-                en_word = tr.translate(src, src='ja', dest='en').text.lower()
-                add_ignore.append(en_word)
-            except Exception as e:
-                print(type(e), e)
-        ignore_list += add_ignore
-        ignore_list.append("store")
-        return ignore_list
-    ignore_list = create_ignoreList()
+    options.add_argument('--window-size=1200,700')
+
+    # from webdriver_manager.chrome import ChromeDriverManager
 
 
-    # driver = webdriver.Chrome('chromedriver', options=driver_settings.options)
-    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
-    dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
+    # from scrape import driver_settings
 
-    driver.get('https://www.gnavi.co.jp/')
-
-    area_input = driver.find_element_by_id('js-suggest-area')
-    area_input.send_keys(area1)
-    driver.find_element_by_class_name('p-search__button').click()
-    sleep(2)
-
-    driver.find_element_by_class_name('search-group__block-trigger').click()
-    driver.find_elements_by_xpath(f"//a[contains(@data-value,'{area2[:-1]}')]")[-1].click() # 県名と同じ市名だと選択肢がかぶるので。
-    driver.find_element_by_xpath("//input[@value='検索する']").click()
-    sleep(1)
-    driver.find_element_by_class_name('search-group__block-trigger').click()
-    driver.find_element_by_link_text('市区町村').click()
-    driver.find_element_by_link_text(area2).click()
-    driver.find_element_by_xpath("//input[@value='検索する']").click()
-
-    atode_list = []
-    created_list = []
 
     try:
-        # for page_num in range(1, 5):  # いったん5ページ目まで
-        for page_num in page_range:  # いったん5ページ目まで
-            try:
-                driver.find_element_by_class_name('pagination__inner').find_element_by_link_text(f'{page_num}').click()
-            except Exception:
-                pass
+        from my_module import capture, Wait_located
+        from scrape_kit import generate_json, endpage_memo, address_ng_memo
+    except ImportError:
+        from site_packages.my_module import capture, Wait_located
+        from scrape.scrape_kit import generate_json, endpage_memo, address_ng_memo
 
-            store_link_list = driver.find_elements_by_class_name('result-cassette__box-inner')
-            for elem in store_link_list:
-                sleep(1)
-                ng_flg = False
-                atode_flg = False
-                atode_dict = {}
+        # area1 = "千葉県"
+    # area2 = "船橋市"
+    # area2 = "市川市"
+    # area2 = "千葉市"
+    # area2 = "松戸市"
+    # area2 = "銚子市"
+    # area2 = "館山市"
 
-                elem.click()
 
-                sleep(2)
+    # area1 = "東京都"
+    # area2s = [
+        # "中目黒",
+        # "新宿",
+        # "渋谷",
+        # "吉祥寺",
+        # "銀座",
+        # "新橋",
+        # "六本木",
+        # "大久保",
+        # "池袋",
+        # "有楽町",
+        # "日本橋",
+        # "お台場",
+        # "中野",
+        # "北千住",
+        # "町田",
+        # "高田馬場",
+        # "上野",
+        # "浅草",
+        # "恵比寿",
+        # "練馬",
+        # "板橋",
+        # "赤羽",
+        # "国分寺",
 
-                handle_array = driver.window_handles
-                driver.switch_to.window(handle_array[-1])
-                sleep(0.5)
-                print('handle OK!')
+        # "麻布",
+        # "原宿",
+        # "青山",
+        # "秋葉原",
+        # "水道橋",
+        # "自由が丘",
+        # "三軒茶屋",
+        # "二子玉川",
+        # "錦糸町",
+        # "押上",
+        # "新小岩",
+        # "蒲田",
+        # "立川",
+        # "八王子",
+        # "新小岩",
+        # "神楽坂",
+        # "巣鴨",
+        # "品川",
+        # "五反田",
+        # "大崎",
+        # "下北沢",
+        # "明大前",
+        # "人形町",
+        # "門前仲町",
+        # "葛西",
+        # "府中",
+        # "調布",
 
-                # 店名ーーーーーーーーー
-                try:
-                    store_name = driver.find_element_by_class_name('shop-info__name').text.strip()
-                    store_name = " ".join(store_name.split('\n'))  # ぐるなび用 店名が2行にわかれてる
-                    print(store_name)
-                except (NoSuchElementException, Exception):
+    # ]
+
+
+    # area1 = "埼玉県"
+    # area2 = "さいたま市"
+    # area2 = "上尾市"
+
+
+    # area1 = "大阪府"
+    # area2s = [
+    #     # "梅田",
+    #     # "難波",
+    #     "心斎橋",
+    #     # "天王寺",
+    #     # "本町",
+    #     # "鶴橋",
+    #     # "",
+    #     # "",
+    #     # "",
+    #     # "",
+    #     # "",
+    #     # "",
+    #     # "",
+    # ]
+
+
+    area1 = "神奈川県"
+    area2s = [
+        # "横浜市",
+        "鎌倉市",
+        # "",
+        # "",
+        # "",
+        # "",
+    ]
+
+    area_list = []
+    for area2 in area2s:
+        area_list.append([area1, area2])
+
+    # page_range = range(1,3)
+    # page_range = range(1,10)
+    # page_range = range(10,20)
+    # page_range = range(1,20)
+
+    page_range = range(28, 30)
+    # page_range = range(30,60)
+
+    # page_range = range(3,4)
+
+    media = "gn"
+
+    driver = webdriver.Chrome('chromedriver', options=options)
+    # driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
+    sleep(3)
+    dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
+
+    start_page = list(page_range)[0]
+
+
+    for area1, area2 in area_list:
+        driver.get('https://www.gnavi.co.jp/')
+
+        area_input = driver.find_element_by_id('js-suggest-area')
+        area_input.send_keys(area1)
+        dw.wait_lacated_class_name('p-search__button').click()
+        sleep(5)
+        dw.wait_lacated_class_name('search-group__block-trigger').click()
+        sleep(1)
+        if area1 == "東京都" or area1 == "大阪府":  # 東京のarea2は〜市がつかないため
+            driver.find_elements_by_xpath(f"//a[contains(@data-value,'{area2}')]")[-1].click()
+        else:
+            driver.find_elements_by_xpath(f"//a[contains(@data-value,'{area2[:-1]}')]")[-1].click()
+        sleep(1)
+        dw.wait_lacated_xpath("//input[@value='検索する']").click()
+        sleep(5)
+        try:
+            dw.wait_lacated_class_name('search-group__block-trigger').click()
+            sleep(1)
+            dw.wait_lacated_link_text('市区町村').click()
+            sleep(1)
+            dw.wait_lacated_link_text(area2).click()
+            sleep(1)
+        except Exception:
+            input_area = driver.find_element_by_id('js-headbar-input-area')
+            input_area.clear()
+            input_area.send_keys(area2[:-1])
+        dw.wait_lacated_xpath("//input[@value='検索する']").click()
+        sleep(5)
+
+        # if area2 != "千葉市":  # 市が大きくていくつかに分かれてる場合、無視してそのまま収集
+        #     dw.wait_lacated_class_name('search-group__block-trigger').click()
+        #     sleep(2)
+        #     if area1 == "東京都" or area1 == "大阪府":
+        #         # driver.find_elements_by_xpath(f"//a[@data-value='{area2}']")[-1].click()
+        #         driver.find_element_by_xpath('//*[@id="js-dropdown-area"]/ul/li[3]/div').find_elements_by_partial_link_text(area2)[-1].click()
+
+        #         # dw.wait_lacated_link_text(area2).click()
+        #         sleep(1)
+        #     else:
+            # dw.wait_lacated_xpath("//input[@value='検索する']").click()
+            # sleep(5)
+
+        atode_list = []
+        created_list = []
+
+        address_ng_list = []
+
+        already_list = []
+
+        page_end_flg = False
+
+        page_range = list(page_range)
+        # 大きいページ番号からスタートの際のページ送り
+        try:
+            if page_range[0] >= 5:
+                page_num = 5
+                while page_range[0] > page_num:
+                    driver.find_element_by_class_name('pagination__inner').find_element_by_link_text(f'{page_num}').click()
+                    print(f'ページ移動中...{page_num}')
+                    sleep(2)
+                    page_num += 1
+        except NoSuchElementException as e:
+            print(type(e), e)
+            page_end_flg = True
+        except Exception as e:
+            print(type(e), e)
+            print('ページ遷移エラー')
+            raise Exception(e)
+
+        # try:
+        if page_end_flg == False:
+            for page_num in page_range:
+                print(' ')
+                print(f'ペーーーじーーーーーー{page_num}')
+                if page_num != 1:
                     try:
-                        store_name = driver.find_element_by_id('header-main-name').text.strip()
+                        driver.find_element_by_class_name('pagination__inner').find_element_by_link_text(f'{page_num}').click()
+                        sleep(3)
+                    except Exception:
+                        page_end_flg = True
+                        print('最後までいきました。')
+                        break
+
+                store_link_list = driver.find_elements_by_class_name('result-cassette__box-inner')
+                # store_link_list = driver.find_elements_by_class_name('result-cassette__box-inner')[:2]
+                for elem in store_link_list:
+                    sleep(1)
+                    atode_dict = {}
+
+                    elem.click()
+
+                    sleep(2)
+
+                    handle_array = driver.window_handles
+                    driver.switch_to.window(handle_array[-1])
+                    sleep(0.5)
+                    print('handle OK!')
+
+                    # 店名ーーーーーーーーーーーー
+                    try:
+                        store_name = driver.find_element_by_class_name('shop-info__name').text.strip()
                         store_name = " ".join(store_name.split('\n'))  # ぐるなび用 店名が2行にわかれてる
                         print(store_name)
-                    except Exception:
-                        ng_flg = True
+                        atode_dict["name"] = store_name
 
-                if ng_flg is False:
+                    except (NoSuchElementException, Exception):
+                        try:
+                            store_name = driver.find_element_by_id('header-main-name').text.strip()
+                            store_name = " ".join(store_name.split('\n'))  # ぐるなび用 店名が2行にわかれてる
+                            print(store_name)
+                            atode_dict["name"] = store_name
+                        except Exception:
+                            # print('かぶりスキップ！')
+                            driver.execute_script("window.close();")
+                            driver.switch_to.window(handle_array[0])
+                            sleep(1)
+                            continue
+
+                    # 広告枠のかぶり店
+                    if store_name in already_list:
+                        print('かぶりスキップ！')
+                        driver.execute_script("window.close();")
+                        driver.switch_to.window(handle_array[0])
+                        sleep(1)
+                        continue
+
+                    # 読み仮名ーーーーーーーーーーーー
                     try:
-                        yomigana = driver.find_element_by_class_name('shop-info__ruby').text.strip().replace(' ','')
+                        yomi_kana = driver.find_element_by_class_name('shop-info__ruby').text.strip().replace(' ', '')
                     except Exception:
-                        yomigana = None
-                    # 店名でstore_object取得  1番近いものを探すーーーー
+                        try:
+                            yomi_kana = driver.find_element_by_id('header-main-ruby').text.strip().replace(' ', '')
+                        except Exception:
+                            yomi_kana = None
 
-                    store_obj, _atode_flg, _atode_dict, _created_list = store_model_process(area_obj, media_type, store_name, ignore_list, yomigana=yomigana)
+                    if yomi_kana:
+                        kakasi = pykakasi.kakasi()
+                        yomigana = "".join([s["hira"] for s in kakasi.convert(yomi_kana)])
+                        yomi_roma = "".join([s["hepburn"] for s in kakasi.convert(yomigana)])
+                        atode_dict["yomigana"] = yomigana
+                        atode_dict["yomi_roma"] = yomi_roma
+                        print(f'よみ {atode_dict["yomigana"]}')
+                        print(f'ローマ {atode_dict["yomi_roma"]}')
 
-                    atode_flg = _atode_flg
-                    atode_dict.update(_atode_dict)
-                    created_list += _created_list
+                    # 住所ーーーーーーーーーーーーーー
+                    try:
+                        region = driver.find_element_by_class_name('region').text
+                        try:
+                            locality = driver.find_element_by_class_name('locality').text
+                        except NoSuchElementException:
+                            locality = ""
+                        # print(address)
+                        address = region + " " + locality
+                    except Exception:
+                        address_ng_list.append(store_name)
+                        address = ""
+                        print('住所取得NG')
+                    atode_dict["address"] = address
 
                     # media_data用ーーー
-                    store_url = driver.current_url
+                    collected_date = datetime.datetime.now(pytz.timezone("Asia/Tokyo"))
+                    atode_dict["collected"] = collected_date
 
-                    if atode_flg is False:
-                        media_obj, _ = models.Media_data.objects.update_or_create(
-                            store=store_obj, media_type=media_type_obj,
-                            defaults={
-                                "url": store_url,
-                            }
-                        )
-                    else:
-                        atode_dict["store_url"] = store_url
+                    atode_dict["url"] = driver.current_url
 
                     # 口コミーーーーーーーーーー
-                    no_review_flg = False
-                    driver.find_element_by_link_text('口コミ').click()
-                    sleep(1)
-                    res = driver.page_source
-                    soup = BeautifulSoup(res, 'html.parser')
-
-                    try:
-                        rate = driver.find_element_by_class_name('trip-advisor-rating-img').get_attribute('alt')
-                        rate = float(rate)
-                    except Exception:
-                        rate = 0
-                        print('no rate')
-
                     try:  # 口コミボタンが無い店もある
+                        driver.find_element_by_link_text('口コミ').click()
+                        sleep(1)
+                        res = driver.page_source
+                        soup = BeautifulSoup(res, 'html.parser')
+
+                        try:
+                            rate = driver.find_element_by_class_name('trip-advisor-rating-img').get_attribute('alt')
+                            rate = float(rate)
+                        except Exception:
+                            rate = 0
+                            print('no rate')
+                        atode_dict["rate"] = rate
+
+                        # try:  # 口コミが無い店もある
                         review_count = len(soup.select('li.trip-advisor-review__list'))
                         if review_count == 0:
                             raise Exception
                     except Exception:
-                        no_review_flg = True
                         print('口コミがありません。')
                     else:
                         print('口コミ発見！！')
 
                         # 「もっと見る」を全て展開ーーーーーーーー
+                        # sleep(2)
                         tsuzukiwoyomu_list = driver.find_elements_by_class_name('plus')[:5]  # 範囲制限
-                        for i in tsuzukiwoyomu_list:
-                            i.click()
-                            # sleep(0.6)  # 早すぎるとバグる
+                        try:
+                            for i in tsuzukiwoyomu_list:
+                                i.click()
+                                sleep(0.6)  # 早すぎるとバグる
+                        except Exception:
+                            pass
+
                         items = soup.select('li.trip-advisor-review__list')[:4]  # 範囲制限
                         atode_review_list = []
                         for i, item in enumerate(items):
@@ -197,85 +407,54 @@ def scrape_gn(area1, area2, page_range):
                                 # <br>タグを\nに置き換える
                                 [s.replace_with('\n') for s in content.select('br')]
                                 content = content.text
-                                print(content)
+                                # print(content)
 
                                 try:
                                     review_date = item.select_one('.trip-advisor-review-day--visit').text
                                     review_date = review_date[review_date.find('：')+1:review_date.find('）')]
                                     review_date = datetime.datetime.strptime(review_date, '%Y年%m月')
-                                    print(review_date)
+                                    # print(review_date)
                                 except (ValueError, AttributeError):
                                     review_date = None
 
-                                if atode_flg is False:
-                                    if i == 0:  # 初期ループ時にデータ消して刷新
-                                        models.Review.objects.filter(media=media_obj).delete()
-                                        print('ReviewObj delete for renewal')
+                                # {"name":a,"name":a,"phone":a,"url":a,"rate":a,
+                                # "review":[{"content":a,"date":a,"log_num":a},{....},{.....}]}
+                                atode_review_dict = {}
+                                atode_review_dict["title"] = title
+                                atode_review_dict["content"] = content
+                                atode_review_dict["date"] = review_date
+                                atode_review_dict["review_point"] = review_point
+                                atode_review_list.append(atode_review_dict)
 
-                                    models.Review.objects.update_or_create(
-                                        media=media_obj, title=title, defaults={
-                                            "content": content,
-                                            "review_date": review_date,
-                                            "review_point": review_point,
-                                        }
-                                    )
-                                    debug(review_point, review_date, title)
-                                    print('レビュー登録!!')
-                                else:
-                                    # {"name":a,"name":a,"phone":a,"url":a,"rate":a,
-                                    # "review":[{"content":a,"date":a,"log_num":a},{....},{.....}]}
-                                    atode_review_dict = {}
-                                    atode_review_dict["title"] = title
-                                    atode_review_dict["content"] = content
-                                    atode_review_dict["date"] = review_date
-                                    atode_review_dict["review_point"] = review_point
-                                    atode_review_list.append(atode_review_dict)
+                        atode_dict["review"] = atode_review_list
 
-                        # atode処理ーーーーーーーーー
-                        if atode_dict:
-                            atode_dict["review"] = atode_review_list
-                        # ーーーーーーーーーーーー
-
-                    if atode_flg is False:
-                        media_obj, _ = models.Media_data.objects.update_or_create(
-                            store=store_obj, media_type=media_type_obj,
-                            defaults={
-                                "rate": rate,
-                                "review_count": review_count,
-                            }
-                        )
-                    else:
                         atode_dict["rate"] = rate
                         atode_dict["review_count"] = review_count
 
-                    if atode_dict:
-                        atode_list.append(atode_dict)
+                    atode_list.append(atode_dict)
 
-                driver.execute_script("window.close();")
-                driver.switch_to.window(handle_array[0])
-                sleep(1)
+                    # 広告枠のかぶり店
+                    already_list.append(store_name)
 
-        print('作成は、')
-        pp(created_list)
-    except Exception as e:
-        print(type(e))
-        print(e)
-        print(f'えらー {page_num} キャプチャ！')
-        capture(driver)
-        driver.quit()
-        raise Exception()
-    # ーーーーーatode処理ーーーーーーーーーー
-    # [{"store_name_db":a,"store_name_site":a,"phone":a,"store_url":a,"rate":a,
-    # "review":[{"title":a,"content":a,"date":a,"log_num":a},{....},{.....}]},
-    #  {"name":a, ..........}]
-    if atode_list:
-        _created_list, not_adopted_list = atode_process(atode_list, media_type, media_type_obj, area_obj)
+                    driver.execute_script("window.close();")
+                    driver.switch_to.window(handle_array[0])
+                    sleep(1)
 
-        created_list += _created_list
+        if atode_list:
+            generate_json(atode_list, media, area1, area2, start_page, page_num)
 
-        print('作成は、')
-        pp(created_list)
-        print('不採用は、')
-        pp(not_adopted_list)
+        if page_end_flg:
+            endpage_memo(media, area1, area2, page_num)
+
+        if address_ng_list:
+            address_ng_memo(address_ng_list, media, area1, area2)
+
+    # except Exception as e:
+    #     print(type(e))
+    #     print(e)
+    #     print(f'えらー {page_num} キャプチャ！')
+    # capture(driver)
+    #     driver.quit()
+    #     raise Exception()
 
     driver.quit()
