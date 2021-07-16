@@ -81,8 +81,7 @@ class Compare_storeName:
             return analyzed_name
 
         clean_name = remove_unnecessary_word(store_name, ignore_list)
-        debug(clean_name)
-        debug(media)
+
 
         # models.Store.objects.filter(area=area_obj)
         # for i in models.Store.objects.filter(area=area_obj):
@@ -189,11 +188,9 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
 
     if first_time:
         print('Its a first time!!!')
-        print("----------------\n" + store_name)
         store_obj, _created_list = regist_new()
         return store_obj, _atode_flg, _atode_dict, _created_list, _chain_list
 
-    print("----------------\n" + store_name)
     print('first_attack!')
     store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media=media_type, min_ratio=1)  # mediaごとの名前で照会。同じメディアでも名前が微妙に変わることがあるので完全一致で探さない。← やっぱり完全一致で。
     if store_kouho_dict:
@@ -498,30 +495,28 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
                     try:
                         review_obj.title = review["title"]
-                        review_obj.save()
                     except KeyError as e:
                         errorlist.append((type(e), e, review["title"]))
 
                 if review["date"]:
                     try:
                         review_obj.review_date = review["date"]
-                        review_obj.save()
                     except KeyError as e:
                         errorlist.append((type(e), e, review["date"]))
 
                 if review["log_num"]:
                     try:
                         review_obj.log_num_byTabelog = review["log_num"]
-                        review_obj.save()
                     except KeyError as e:
                         errorlist.append((type(e), e, review["log_num"]))
 
                 if review["review_point"]:
                     try:
                         review_obj.review_point = review["review_point"]
-                        review_obj.save()
                     except KeyError as e:
                         errorlist.append((type(e), e, review["review_point"]))
+
+                review_obj.save()
 
             if flg == "update":
                 print(f'update OK! {store["store_name_site"]}')

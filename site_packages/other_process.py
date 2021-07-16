@@ -6,21 +6,35 @@
 from scrape import models
 from decimal import Decimal
 
+from datetime import datetime
+
+
 def clean_store_obj(area_obj):
-    store_objs = models.Store.objects.all()
-    # store_objs = models.Store.objects.filter(area__area_name="千葉県 銚子市")
+    # store_objs = models.Store.objects.all()
+    store_objs = models.Store.objects.filter(area__area_name="千葉県 船橋市")
     count = len(store_objs)
     destroy = []
+
+    now = datetime.now()
     for s in store_objs:
         if len(models.Media_data.objects.filter(store=s)) == 0:
             destroy.append(s)
             s.delete()
         print(f"count あと {count}")
         count -= 1
+    sa = datetime.now() - now
+    print("destroy are ", destroy)
+    print(sa)
 
     # 確認のみ
     from pprint import pprint as pp
-    be_deleted = [[s.store_name, s.area.__str__()] for s in store_objs if len(models.Media_data.objects.filter(store=s)) == 0]
+    # be_deleted = [[s.store_name, s.area.__str__()] for s in store_objs if len(models.Media_data.objects.filter(store=s)) == 0] # 内包表記でやっても時間変わらなかった
+    be_deleted = []
+    for s in store_objs:
+        if len(models.Media_data.objects.filter(store=s)) == 0:
+            be_deleted.append(s)
+        print(f"count あと {count}")
+        count -= 1
     pp(be_deleted)
 
 
@@ -137,42 +151,41 @@ def conflict_integration(childname, childmedia, parentname, area=""):
         )
         try:
             r_obj.title = o.title
-            r_obj.save()
         except Exception:
             pass
         try:
             r_obj.review_date = o.review_date
-            r_obj.save()
         except Exception:
             pass
         try:
             r_obj.log_num_byTabelog = o.log_num_byTabelog
-            r_obj.save()
         except Exception:
             pass
         try:
             r_obj.review_point = o.review_point
-            r_obj.save()
         except Exception:
             pass
+
+        r_obj.save()
     return child_obj, childmedia, childname, parent_obj, child_m_data_obj
 
 
+area = "埼玉県 上尾市"
 area = "千葉県 船橋市"
-area = "千葉県 市川市"
 area = "千葉県 千葉市"
 # area = "千葉県 柏市"
-area = "東京都 麻布"
+area = "東京都 新宿"
 area = "東京都 青山"
 area = "大阪府 梅田"
 area = "大阪府 天王寺"
 child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="築地銀だこ", childmedia="google", parentname="築地銀だこハイボール酒場 サンモール中野店", area=area)
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="日本酒バル 富成喜笑店", childmedia="gn", parentname="日本酒バル じゃのめん", area="")
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="キッチンオリジン 船橋 Kitchen Origin Funabashi", childmedia="uber", parentname="キッチンオリジン 船橋店", area=area)
 child_obj.delete()
 
-
-st = models.Store.objects.filter(store_name="日本酒バル じゃのめん")[0]
-# me = models.Media_data.objects.filter(store=st)[0]
+st = models.Store.objects.get(store_name="本鮪・旬菜・酒 一九")
+st.address = "千葉県船橋市印内町605-1"
+st.save()
+me = models.Media_data.objects.filter(store=st)[0]
 
 if input('media_dataとstore_name_by_media消す？y/n: ') == "y":
     child_m_data_obj.delete()
@@ -187,14 +200,17 @@ if input('store消す？y/n: ') == "y":
 
 # 消すーーーーーーーーーー
 ta = models.Store.objects.get(store_name="レストラン", area__area_name__icontains="六本木")
-ta = models.Store.objects.get(store_name="ファミリーマート お台場海浜公園店")
+ta = models.Store.objects.get(store_name="(株)アシスト自由が丘店")
 ta.delete()
 models.Store.objects.get(store_name="厨房機器 店舗用品販売 テンポス柏店").delete()
-models.Store.objects.filter(store_name__startswith="TOHOシネマズ").delete()
-# , area__area_name__icontains="銀座")
-# ta.area
+models.Store.objects.filter(store_name__startswith="ほっともっと").delete()
+
+# googleのmedia_data消す
+ga = models.Media_data.objects.filter(store__area__area_name="千葉県 船橋市", media_type__media_type="tb")
+ga.delete()
 
 # models.Media_data.objects.filter(store=5148)
+
 
 # area mediatypeで消すーーー
 area = "中野"
@@ -236,10 +252,10 @@ def insert_yomigana():
 
 # エリアごとmedia_type別media_data数
 def show_madiadata_count():
-    # area = "千葉県 船橋市"
+    area = "千葉県 船橋市"
     # area = "千葉県 千葉市"
-    # area = "千葉県 館山"
-    area = "千葉県 松戸市"
+    # area = "千葉県 館山市"
+    # area = "千葉県 松戸市"
     # area = "東京都 中目黒"
     # area = "東京都 新宿"
     # area = "埼玉県 さいたま市"
@@ -248,6 +264,7 @@ def show_madiadata_count():
 
     areaobj = models.Area.objects.get(area_name=area)
     storeobjs = models.Store.objects.filter(area=areaobj)
+    # len(storeobjs)
 
     li = []
     le = len(storeobjs)
@@ -295,3 +312,34 @@ def set_total_rate():
         st.total_rate = total_rate
         st.save()
         le -= 1
+
+
+# json fileの一部抜き出し
+def jjjj():
+    end_page = 14
+    import datetime
+    import json
+
+    def date_trans_json(obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime('%Y-%m-%d')
+    file = "/Users/yutakakudo/Google ドライブ/colab/json/使用済/google_千葉県_松戸市_3から18_2021-07-09_0141.json"
+    area1 = file.split('_')[1]
+    area2 = file.split('_')[2]
+    print(f"{area1} {area2}")
+    media_type = file.split('_')[0].split('/')[-1]
+    print(f"media_type {media_type}")
+    start_page = file.split('_')[3].split('から')[0]
+    # page_num = file.split('_')[3].split('から')[1]
+    print("start_page", start_page)
+    n = datetime.datetime.now()
+
+    with open(file) as f:
+        jfile = json.load(f)
+    len(jj)
+
+    jj = jfile[:(end_page-2)*20]
+    jfile[:end_page*20]
+
+    with open(f"/Users/yutakakudo/Google ドライブ/colab/json/{media_type}_{area1}_{area2}_新{start_page}から{end_page}_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
+        json.dump(jj, f, indent=4, default=date_trans_json)

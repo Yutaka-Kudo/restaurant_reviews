@@ -27,12 +27,19 @@ from site_packages.sub import IGNORE_STORE_NAME, OTHER_THAN_RESTAURANTS
 
 
 def insert_from_json(file, area1: str, area2: str, media_type: str):
+    # 全角→半角 変換 googleが、、、
+    ZEN = "".join(chr(0xff01 + i) for i in range(94))
+    HAN = "".join(chr(0x21 + i) for i in range(94))
+    ZEN2HAN = str.maketrans(ZEN, HAN)
+    # HAN2ZEN = str.maketrans(HAN, ZEN)
 
     try:
         with open(file) as f:
             jfile = json.load(f)
 
-        print(area1+" "+area2)
+        # jfile = jfile[-79:]
+
+        print(area1 + " " + area2)
 
         media_type_obj = models.Media_type.objects.get(media_type=media_type)
 
@@ -51,7 +58,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         )
 
         # 県・市
-        area_name = area1+" "+area2
+        area_name = area1 + " " + area2
 
         area_hira = "".join([s["hira"] for s in kakasi.convert(area_name)])
         area_roma = "".join([s["hepburn"] for s in kakasi.convert(area_hira)])
@@ -68,9 +75,10 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         # ーーーーーーーーーーーーーーーー
 
         def create_ignoreList():
-            area1_word = area1[:-1]
-            area2_word = area2 if area1 == "東京都" else area2[:-1]
-            ignore_list = [' ', area1_word, area2_word, "店", "個室", "居酒屋"]
+            # area1_word = area1[:-1]
+            # area2_word = area2 if area1 == "東京都" else area2[:-1]
+            # ignore_list = [' ', area1_word, area2_word, "店", "個室", "居酒屋"]
+            ignore_list = [' ', "店", "個室", "居酒屋"]
             # ignore_listに英語も入れる
             tr = Translator()
             # del ignore_list[0] # 最初に入ってる空白を消す
@@ -90,18 +98,23 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         created_list = []
         chain_list = []
         jfile_length = len(jfile)
+
         for store_data in jfile:
             print(f'あと {jfile_length}')
             atode_dict = {}
 
             store_name = store_data["name"]
+            print("----------------\n" + store_name)
+
             # 除外ネームならcontinue
             if store_name in IGNORE_STORE_NAME:
                 jfile_length -= 1
+                print('除外ネーム')
                 continue
             # 絶対飲食以外のワードならcontinue カラオケ等
             if [s for s in OTHER_THAN_RESTAURANTS if re.match(s.replace(' ', ''), store_name.replace(' ', ''))]:
                 jfile_length -= 1
+                print('飲食以外ネーム')
                 continue
 
             # 電話ーーーーーーーーーーー
@@ -114,6 +127,9 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             # 住所ーーーーーーーーーーー
             try:
                 address = store_data["address"]
+                # 全角→半角 変換 googleが、、、
+                address = address.translate(ZEN2HAN)
+                address = address.replace('日本、', '').strip()
             except Exception:
                 address = ""
             # ーーーーーーーーーーーーー
@@ -136,9 +152,6 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             except Exception:
                 yomi_roma = ""
             # ーーーーーーーーーーーー
-            print(store_name)
-            print('よみ', yomigana)
-            print('ロマ', yomi_roma)
 
             # 店名でstore_object取得  1番近いものを探すーーーー
             store_obj, _atode_flg, _atode_dict, _created_list, _chain_list = store_model_process(
@@ -256,29 +269,25 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                             models.Review.objects.filter(media=media_obj).delete()
                             print('ReviewObj delete for renewal')
 
-                        debug(date, content[:20])
+                        print(date, content[:20])
 
                         rev_obj, _ = models.Review.objects.update_or_create(
                             media=media_obj, content=content
                         )
 
                         if title:
-
                             # 長さ制限
                             if len(title) > 100:
                                 title = title[:100]
-
                             rev_obj.title = title
-                            rev_obj.save()
                         if date:
                             rev_obj.review_date = date
-                            rev_obj.save()
                         if review_point:
                             rev_obj.review_point = review_point
-                            rev_obj.save()
                         if log_num:
                             rev_obj.log_num_byTabelog = log_num
-                            rev_obj.save()
+
+                        rev_obj.save()
 
                         print('レビュー登録!!')
                     else:
