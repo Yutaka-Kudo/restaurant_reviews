@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from scrape.scrape_tb import scrape_tb
-from scrape.scrape_google import scrape_google, scrape_google_get_storenames
-from scrape.scrape_google_test import scrape_google_test
+from scrape.scrape_google import scrape_google
+from scrape.scrape_google_refill import scrape_google_refill
 from scrape.scrape_uber import scrape_uber
 from scrape.scrape_hp import scrape_hp
 from scrape.scrape_gn import scrape_gn
@@ -35,11 +35,9 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
         elif media == "gn":
             scrape_gn()
         elif media == "google":
-            scrape_google(area1, area2, range(start, end))
-        elif media == "google_t":
-            scrape_google_test()
-        elif media == "gcs":
-            scrape_google_get_storenames(area1, area2, range(start, end))
+            scrape_google()
+        elif media == "google_r":
+            scrape_google_refill()
         elif media == "uber":
             scrape_uber(area1, area2)
 

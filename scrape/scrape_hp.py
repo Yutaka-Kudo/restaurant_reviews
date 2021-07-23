@@ -1,25 +1,25 @@
-from selenium import webdriver
-from selenium.webdriver.common import keys
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import NoSuchElementException
-from time import sleep
-from bs4 import BeautifulSoup
-from googletrans import Translator
+# from selenium import webdriver
+# from selenium.webdriver.common import keys
+# from webdriver_manager.chrome import ChromeDriverManager
+# from selenium.webdriver.common.keys import Keys
+# from selenium.common.exceptions import NoSuchElementException
+# from time import sleep
+# from bs4 import BeautifulSoup
+# from googletrans import Translator
 
-import datetime
-from devtools import debug
-from pprint import pprint as pp
+# import datetime
+# from devtools import debug
+# from pprint import pprint as pp
 
-from scrape import driver_settings
-from scrape import models
-from site_packages.my_module import *
+# from scrape import driver_settings
+# from scrape import models
+# from site_packages.my_module import *
 
-# area1 = "千葉県"
-# area2 = "船橋市"
+# # area1 = "千葉県"
+# # area2 = "船橋市"
 
-# あとで表示順のデータベースつくるか？
-media_type = "hp"
+# # あとで表示順のデータベースつくるか？
+# media_type = "hp"
 
 # area_obj = models.Area.objects.get(area_name="千葉県 船橋市")
 # store_obj = models.Store.objects.filter(store_name__icontains="963", area=area_obj)[1]
@@ -30,6 +30,36 @@ media_type = "hp"
 # def hover(elem):
 #     actions = webdriver.ActionChains(driver)
 #     actions.move_to_element(elem).perform()  # ホバー
+
+from selenium import webdriver
+import random
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
+from time import sleep
+from bs4 import BeautifulSoup
+
+import datetime
+import pytz
+from devtools import debug
+from pprint import pprint as pp
+from dateutil.relativedelta import relativedelta
+
+import json
+import re
+
+from scrape import driver_settings
+
+try:
+    from my_module import capture, Wait_located
+    from scrape_kit import generate_json, endpage_memo, address_ng_memo
+except ImportError:
+    from site_packages.my_module import capture, Wait_located
+    from scrape.scrape_kit import generate_json, endpage_memo, address_ng_memo
+
+
+from site_packages.my_module import collectStoreOtherThanThat
+
 
 
 def scrape_hp(area1, area2, page_range):

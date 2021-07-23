@@ -14,9 +14,30 @@ from janome.tokenizer import Tokenizer
 import difflib
 import re
 import pykakasi
+from dateutil.relativedelta import relativedelta
 
 
-from site_packages.sub import regist_category, chain_replace
+from site_packages.sub import category_set,name_set,address_set, chain_replace
+
+
+def collectStoreOtherThanThat(area_name, media_type):
+    area_obj = models.Area.objects.get(area_name=area_name)
+    sts = models.Store.objects.filter(area=area_obj)
+    # sts = models.Store.objects.filter(area=area_obj)[:10]
+
+    to_collect = []
+    length = len(sts)
+    for storeobj in sts:
+        print(f"あと{length}")
+        mds = models.Media_data.objects.filter(store=storeobj)
+        if not [md for md in mds if md.media_type.__str__() == media_type]:
+            print(storeobj.store_name)
+            to_collect.append(getattr(storeobj, "store_name"))
+
+        length -= 1
+    print(to_collect)
+
+    return to_collect
 
 
 def capture(driver):
@@ -63,7 +84,7 @@ class Compare_storeName:
         token_filters = [LowerCaseFilter(), ExtractAttributeFilter('surface')]  # 小文字に ＆ 抽出する属性
         self.a = Analyzer(char_filters=char_filters, token_filters=token_filters)
 
-    def search_store_name(self, store_name: str, querysets, ignore_list: list = None, media: str = "", min_ratio: float = 0.6):
+    def search_store_name(self, store_name: str, querysets, ignore_list: list = None, media: str = "", min_ratio: float = 0.6, origin_name: str = ""):
         if ignore_list is None:
             ignore_list = []
 
@@ -82,104 +103,90 @@ class Compare_storeName:
 
         clean_name = remove_unnecessary_word(store_name, ignore_list)
 
-
         # models.Store.objects.filter(area=area_obj)
         # for i in models.Store.objects.filter(area=area_obj):
         #     print(i.store_name)
 
         store_kouho_dict = {}
 
-        # store_kouho_list, ratio_list = [], []
-        for obj in querysets:
-            try:
-                if media == "":
-                    clean_name_in_db = remove_unnecessary_word(obj.store_name, ignore_list)
-                elif media == "gn":
-                    clean_name_in_db = remove_unnecessary_word(obj.store_name_gn, ignore_list)
-                elif media == "hp":
-                    clean_name_in_db = remove_unnecessary_word(obj.store_name_hp, ignore_list)
-                elif media == "tb":
-                    clean_name_in_db = remove_unnecessary_word(obj.store_name_tb, ignore_list)
-                elif media == "retty":
-                    clean_name_in_db = remove_unnecessary_word(obj.store_name_retty, ignore_list)
-                elif media == "demaekan":
-                    clean_name_in_db = remove_unnecessary_word(obj.store_name_demaekan, ignore_list)
-                elif media == "uber":
-                    clean_name_in_db = remove_unnecessary_word(obj.store_name_uber, ignore_list)
-                elif media == "google":
-                    clean_name_in_db = remove_unnecessary_word(obj.store_name_google, ignore_list)
-                else:
-                    raise Exception('media が間違っています。')
-            except Exception:  # 新しいメディアからの初期登録時。上の処理はデータがないとバグるため
-                clean_name_in_db = " "
-
+        if origin_name:
+            clean_name_in_db = remove_unnecessary_word(origin_name, ignore_list)
             ratio = difflib.SequenceMatcher(lambda x: x in [" ", "-"], clean_name, clean_name_in_db).ratio()  # 類似度
-
             if ratio >= min_ratio:
-                # store_kouho_list.append(obj)
-                # ratio_list.append(ratio)
-                # debug(clean_name_in_db, ratio)
-                store_kouho_dict.update({obj: {"ratio": ratio, "clean_name": clean_name, "clean_name_in_db": clean_name_in_db}})
+                store_kouho_dict.update({querysets: {"ratio": ratio, "clean_name": clean_name, "clean_name_in_db": clean_name_in_db}})
+        else:
+            for obj in querysets:
+                try:
+                    if media == "":
+                        clean_name_in_db = remove_unnecessary_word(obj.store_name, ignore_list)
+                    elif media == "gn":
+                        clean_name_in_db = remove_unnecessary_word(obj.store_name_gn, ignore_list)
+                    elif media == "hp":
+                        clean_name_in_db = remove_unnecessary_word(obj.store_name_hp, ignore_list)
+                    elif media == "tb":
+                        clean_name_in_db = remove_unnecessary_word(obj.store_name_tb, ignore_list)
+                    elif media == "retty":
+                        clean_name_in_db = remove_unnecessary_word(obj.store_name_retty, ignore_list)
+                    elif media == "demaekan":
+                        clean_name_in_db = remove_unnecessary_word(obj.store_name_demaekan, ignore_list)
+                    elif media == "uber":
+                        clean_name_in_db = remove_unnecessary_word(obj.store_name_uber, ignore_list)
+                    elif media == "google":
+                        clean_name_in_db = remove_unnecessary_word(obj.store_name_google, ignore_list)
+                    else:
+                        raise Exception('media が間違っています。')
+                except Exception:  # 新しいメディアからの初期登録時。上の処理はデータがないとバグるため
+                    clean_name_in_db = " "
+
+                ratio = difflib.SequenceMatcher(lambda x: x in [" ", "-"], clean_name, clean_name_in_db).ratio()  # 類似度
+
+                if ratio >= min_ratio:
+                    # store_kouho_list.append(obj)
+                    # ratio_list.append(ratio)
+                    # debug(clean_name_in_db, ratio)
+                    store_kouho_dict.update({obj: {"ratio": ratio, "clean_name": clean_name, "clean_name_in_db": clean_name_in_db}})
 
         # return dict(zip(store_kouho_list, ratio_list))
         return store_kouho_dict
 
 
-def store_model_process(area_obj: models.Area, media_type: str, store_name: str, ignore_list: list, phone: str = "", address: str = "", category_list: list = None, yomigana: str = "", yomi_roma: str = "", first_time: bool = False):
+compare = Compare_storeName()
+
+
+
+def store_model_process(area_obj: models.Area, media_type: str, store_name: str, ignore_list: list, phone: str = "", address: str = "", category_list: list = None, yomigana: str = "", yomi_roma: str = "", first_time: bool = False, origin_name: str = ""):
 
     _atode_flg = False
     _atode_dict = {}
     _created_list = []
     _chain_list = []
 
-    store_objs = models.Store.objects.filter(area=area_obj)
+    if origin_name:
+        print(f'origin: {origin_name}')
+        try:
+            store_objs = models.Store.objects.get(store_name=origin_name, area=area_obj)
+        except Exception:
+            return None, None, None, None, None
+    else:
+        store_objs = models.Store.objects.filter(area=area_obj)
 
-    compare = Compare_storeName()
 
-    def name_set(store_obj):
-        store_obj.update_name(store_name, media_type)
-        if media_type == "tb":
-            store_obj.update_name(store_name)
 
-        if yomigana:
-            store_obj.yomigana = yomigana
-            store_obj.save()
-        elif not store_obj.yomigana:
-            kakasi = pykakasi.kakasi()
-            name_hira = kakasi.convert(store_name.strip().replace(' ', ''))
-            name_hira = "".join([s["hira"] for s in name_hira])
-            store_obj.yomigana = name_hira
-            store_obj.save()
-
-        if yomi_roma:
-            store_obj.yomi_roma = yomi_roma
-            store_obj.save()
-        elif not store_obj.yomi_roma:
-            kakasi = pykakasi.kakasi()
-            name_roma = kakasi.convert(store_name.strip().replace(' ', ''))
-            name_roma = "".join([s["hepburn"] for s in name_roma])
-            store_obj.yomi_roma = name_roma
-            store_obj.save()
-        
-    def address_set(store_obj):
-        if (address and not store_obj.address) or (address and media_type == "gn") or (address and media_type == "tb"):
-            store_obj.address = address
-            store_obj.save()
 
     def regist_new():
         store_obj, _ = models.Store.objects.get_or_create(store_name=store_name, area=area_obj)
 
-        name_set(store_obj)
+        name_set(store_obj, store_name,media_type,yomigana,yomi_roma)
 
         if phone:  # 電話は不用意に変えたくないので新規登録時だけ
             store_obj.phone_number = phone
             store_obj.save()
 
-        address_set(store_obj)
+        address_set(store_obj,address,media_type)
 
         # カテゴリ登録
         if category_list:
-            regist_category(store_obj, category_list)
+            category_set(store_obj, category_list)
 
         _created_list.append(store_name)
         print('create store_obj!!')
@@ -187,65 +194,81 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
         return store_obj, _created_list
 
     if first_time:
+        # if first_time or media_type == "tb":
         print('Its a first time!!!')
         store_obj, _created_list = regist_new()
         return store_obj, _atode_flg, _atode_dict, _created_list, _chain_list
 
     print('first_attack!')
-    store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media=media_type, min_ratio=1)  # mediaごとの名前で照会。同じメディアでも名前が微妙に変わることがあるので完全一致で探さない。← やっぱり完全一致で。
+    store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media=media_type, min_ratio=1, origin_name=origin_name)  # mediaごとの名前で照会。同じメディアでも名前が微妙に変わることがあるので完全一致で探さない。← やっぱり完全一致で。
     if store_kouho_dict:
         # debug(store_kouho_dict)
         store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
 
-        name_set(store_obj)
-        address_set(store_obj)
+        name_set(store_obj, store_name,media_type,yomigana,yomi_roma)
+        address_set(store_obj,address,media_type)
 
         # カテゴリ登録
         if category_list:
-            regist_category(store_obj, category_list)
+            category_set(store_obj, category_list)
 
         print('get store_obj!!')
 
     else:
         print('second_attack!')
-        store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media='', min_ratio=0.9)  # 今度はDB内の名前で照会
+        store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media='', min_ratio=1, origin_name=origin_name)  # 今度はDB内の名前で照会
         if store_kouho_dict:
             debug(store_kouho_dict)
             store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
 
-            name_set(store_obj)
-            address_set(store_obj)
+            name_set(store_obj, store_name,media_type,yomigana,yomi_roma)
+            address_set(store_obj,address,media_type)
 
             # カテゴリ登録
             if category_list:
-                regist_category(store_obj, category_list)
+                category_set(store_obj, category_list)
 
             print('get store_obj and update!!')
         else:
             # チェーン店の場合、メディアにより多少変わるので名前を替えて再検索
-            replaced_name = chain_replace(store_name)
+            replaced_name: str = chain_replace(store_name)
             if replaced_name:
                 _chain_list.append(replaced_name)
                 print('chain_attack!!!!')
-                store_kouho_dict = compare.search_store_name(replaced_name, store_objs, ignore_list, media='', min_ratio=0.9)
+                store_kouho_dict = compare.search_store_name(replaced_name, store_objs, ignore_list, media='', min_ratio=1, origin_name=origin_name)
                 if store_kouho_dict:
                     debug(store_kouho_dict)
                     store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
 
-                    name_set(store_obj)
-                    address_set(store_obj)
+                    name_set(store_obj, store_name,media_type,yomigana,yomi_roma)
+                    address_set(store_obj,address,media_type)
 
                     # カテゴリ登録
                     if category_list:
-                        regist_category(store_obj, category_list)
+                        category_set(store_obj, category_list)
 
                     print('get store_obj and update!!')
                     return store_obj, _atode_flg, _atode_dict, _created_list, _chain_list
 
             print('third_attack!')
-            store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media='', min_ratio=0.4)  # 今度はDB内の名前で照会
-            if store_kouho_dict:
+            store_kouho_dict = compare.search_store_name(store_name, store_objs, ignore_list, media='', min_ratio=0.3, origin_name=origin_name)  # 今度はDB内の名前で照会
 
+            if origin_name:
+                store_obj:models.Store = store_objs
+                print('atode...')
+                _atode_flg = True
+                _atode_dict["store_name_db"] = store_obj.store_name
+                _atode_dict["store_name_site"] = store_name
+
+                # あれば。なければ明示的にNoneをいれてる。
+                _atode_dict["address_db"] = store_obj.address if store_obj.address else None
+                _atode_dict["address_site"] = address if address else None
+                _atode_dict["phone"] = phone if phone else None
+                _atode_dict["category"] = category_list if category_list else None
+                _atode_dict["yomigana"] = yomigana if yomigana else None
+                _atode_dict["yomi_roma"] = yomi_roma if yomi_roma else None
+
+            elif store_kouho_dict:
                 debug(store_kouho_dict)
                 store_obj, sub_name_dict = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
                 debug(store_obj.store_name)
@@ -258,14 +281,15 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
                     # HPだけあやしい
                     else:
                         _atode_dict["this_media_name"] = getattr(store_obj, f"store_name_{media_type}")
+                    # _atode_dict["this_media_name"] = getattr(store_obj, f"store_name_{media_type}")
 
                 # あるか無いか微妙なラインなのでatodeシリーズにまとめで確認
                 print('atode...')
                 _atode_flg = True
                 _atode_dict["store_name_db"] = store_obj.store_name
                 _atode_dict["store_name_site"] = store_name
-                _atode_dict["clean_name"] = sub_name_dict["clean_name"]
-                _atode_dict["clean_name_in_db"] = sub_name_dict["clean_name_in_db"]
+                # _atode_dict["clean_name"] = sub_name_dict["clean_name"]
+                # _atode_dict["clean_name_in_db"] = sub_name_dict["clean_name_in_db"]
 
                 # あれば。なければ明示的にNoneをいれてる。
                 _atode_dict["address_db"] = store_obj.address if store_obj.address else None
@@ -286,6 +310,8 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
     _created_list = []
     not_adopted_list = []
+    kill_list = []
+    delete_list = []
 
     update_list = []
     regist_list = []
@@ -324,6 +350,9 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
             elif regist == "n":  # ゴミ箱いき
                 not_adopted_list.append(store["store_name_site"])
+                if doubt:
+                    doubt_list.append(f'この名前    : {store["store_name_site"]}')
+                    doubt_list.append(f'DBの名前    : {store["store_name_db"]}')
                 print('move not_adopted_list')
             else:  # やり直し
                 if doubt:
@@ -332,15 +361,19 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                     return submit_regist()
 
         def submit_update():
-            submit = input('この名前ですか？y / N or A： ').lower()
+            submit = input('この名前ですか？y / N or j or K： ').lower()
             if submit == "y":
                 update_list.append(store)
 
             elif submit == "n":
                 submit_regist()
 
-            elif submit == "a":
+            elif submit == "j":
                 submit_regist(doubt=True)
+
+            elif submit == "k":
+                kill_list.append(store["store_name_db"])
+                print('kill')
 
             else:
                 return submit_update()
@@ -350,12 +383,14 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
         length = len(datalist)
         for store in datalist:
             # store登録ーーーーーーーーーー
+            store_obj:models.Store
             if flg == "update":
                 store_obj, _ = models.Store.objects.get_or_create(store_name=store["store_name_db"], area=area_obj)
             elif flg == "regist":
                 store_obj, _ = models.Store.objects.get_or_create(store_name=store["store_name_site"], area=area_obj)
             else:
                 store_obj = None
+                # store_obj = models.Store.objects.none()
                 print('エラー')
 
             # 店名
@@ -413,7 +448,7 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
             # カテゴリ登録
             if store["category"]:
-                regist_category(store_obj, store["category"], errorlist)
+                category_set(store_obj, store["category"], errorlist)
 
             # media_data登録ーーーーーー
             media_obj, _ = models.Media_data.objects.update_or_create(
@@ -477,46 +512,50 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             # review登録ーーーーーーーー
             first_flg = True
             for review in store["review"]:
+                try:
+                    if flg == "update" and first_flg:
+                        models.Review.objects.filter(media=media_obj).delete()
+                        print('ReviewObj delete for renewal')
+                        first_flg = False
 
-                if flg == "update" and first_flg:
-                    models.Review.objects.filter(media=media_obj).delete()
-                    print('ReviewObj delete for renewal')
-                    first_flg = False
+                    review_obj, _ = models.Review.objects.update_or_create(
+                        media=media_obj, content=review["content"]
+                    )
 
-                review_obj, _ = models.Review.objects.update_or_create(
-                    media=media_obj, content=review["content"]
-                )
+                    if review["title"]:
 
-                if review["title"]:
+                        # 長さ制限
+                        if len(review["title"]) > 100:
+                            review["title"] = review["title"][:100]
 
-                    # 長さ制限
-                    if len(review["title"]) > 100:
-                        review["title"] = review["title"][:100]
+                        try:
+                            review_obj.title = review["title"]
+                        except KeyError as e:
+                            errorlist.append((type(e), e, review["title"]))
 
-                    try:
-                        review_obj.title = review["title"]
-                    except KeyError as e:
-                        errorlist.append((type(e), e, review["title"]))
+                    if review["date"]:
+                        try:
+                            review_obj.review_date = review["date"]
+                        except KeyError as e:
+                            errorlist.append((type(e), e, review["date"]))
 
-                if review["date"]:
-                    try:
-                        review_obj.review_date = review["date"]
-                    except KeyError as e:
-                        errorlist.append((type(e), e, review["date"]))
+                    if review["log_num"]:
+                        try:
+                            review_obj.log_num_byTabelog = review["log_num"]
+                        except KeyError as e:
+                            errorlist.append((type(e), e, review["log_num"]))
 
-                if review["log_num"]:
-                    try:
-                        review_obj.log_num_byTabelog = review["log_num"]
-                    except KeyError as e:
-                        errorlist.append((type(e), e, review["log_num"]))
+                    if review["review_point"]:
+                        try:
+                            review_obj.review_point = review["review_point"]
+                        except KeyError as e:
+                            errorlist.append((type(e), e, review["review_point"]))
 
-                if review["review_point"]:
-                    try:
-                        review_obj.review_point = review["review_point"]
-                    except KeyError as e:
-                        errorlist.append((type(e), e, review["review_point"]))
-
-                review_obj.save()
+                    review_obj.save()
+                except Exception as e:
+                    print(type(e),e)
+                    print(store["store_name_site"])
+                    print('レビュー登録失敗↑')
 
             if flg == "update":
                 print(f'update OK! {store["store_name_site"]}')
@@ -533,6 +572,24 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
     if regist_list:
         update_or_regist(regist_list, flg="regist")
 
+    # その名前で検索しても出てこない店を調査。口コミがないなら(又は最終口コミがけっこう前)、既に閉店していると判断。店の削除とIGNORENAMEリストに書き込み。
+    if kill_list:
+        limit_months = 24
+
+        for name in kill_list:
+            store_obj = models.Store.objects.get(store_name=name, area=area_obj)
+            reviews = models.Review.objects.filter(media__store=store_obj)
+
+            rescue_flg = False
+            for rev in reviews:
+                if rev.review_date > datetime.datetime.now().date() - relativedelta(months=limit_months):
+                    rescue_flg = True
+                    break
+
+            if rescue_flg is False:
+                store_obj.delete()
+                delete_list.append(name)
+
     if errorlist:
         print('write エラーログ')
         n = datetime.datetime.now()  # + datetime.timedelta(hours=9)
@@ -540,4 +597,4 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             for d in errorlist:
                 f.write(f"{d}\n")
 
-    return _created_list, not_adopted_list, doubt_list
+    return _created_list, not_adopted_list, doubt_list, delete_list

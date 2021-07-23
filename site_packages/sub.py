@@ -1,3 +1,8 @@
+import pykakasi
+
+from scrape import models
+
+
 IGNORE_STORE_NAME = [
     "お台場たこ焼きミュージアム",
     "ふなばしアンデルセン公園",
@@ -57,6 +62,18 @@ IGNORE_STORE_NAME = [
     "(株)アシスト自由が丘店",
     "コンテナキッチン",
     "ネクスト船橋",
+    "東京ベイ幕張ホール",
+    "船橋競馬場",
+    "飲食店",
+    "HACOSTADIUM TOKYO.one",
+    "ハコプラス",
+    "市川サンライズゴルフセンター",
+    "ニッケコルトンプラザ",
+    "津田沼PARCO",
+    "まんが＆インターネットカフェ アルファ24 京成大久保店",
+    "ペリエ津田沼",
+    "",
+    "",
     "",
     "",
     "",
@@ -65,11 +82,16 @@ IGNORE_STORE_NAME = [
 ]
 
 OTHER_THAN_RESTAURANTS = [
+    # 漫喫ーーーーーーーーーー
     ".*快活CLUB",
+    "メディアカフェポパイ",
+    "ゲラゲラ",
+    # カラオケーーーーーーーーーー
     ".*ビッグエコー",
     ".*BIGECHO",
     ".*JOYSOUND",
     ".*カラオケ コート・ダジュール",
+    # "カラオケパセラ",
     ".*カラオケCLUB DAM",
     ".*カラオケ館",
     ".*カラオケONE",
@@ -85,48 +107,67 @@ OTHER_THAN_RESTAURANTS = [
     ".*カラオケファンタジー",
     ".*カラオケラウンジ",
     ".*カラオケルーム",
-    ".*株式会社エイブル",
+    # コンビニーーーーーーーーーー
     "ファミリーマート",
     "ミスタードーナツ",
+    "ニューヤマザキデイリーストア",
+    "デイリーヤマザキ",
     "ローソン",
     "ミニストップ",
     "セブンイレブン",
+    # 不動産ーーーーーーーーーーー
     ".*タウンハウジング",
+    ".*株式会社エイブル",
+    "ユウキホーム",
     ".*ピタットハウス",
     ".*ハウスコム",
-    "ビックカメラ",
-    "ヨドバシカメラ",
+    # デパートーーーーーーーーーー
     "そごう",
     "イトーヨーカドー",
     "西友",
     "髙島屋",
     "日本橋髙島屋",
-    "アパホテル",
-    # "カラオケパセラ",
-    "ホテルリブマックス",
-    "ホテルルートイン",
+    "東武百貨店",
+    "クイーンズ伊勢丹",
+    "ビックカメラ",
+    "ヨドバシカメラ",
     "島忠",
-    "メディアカフェポパイ",
-    "コーナン",
+    ".*コーナン",
+    # スーパーーーーーーーーーーー
     "イオン",
     "イオンモール",
+    "マックスバリュ",
+    "ワイズマート",
+    "マルエツ",
     # "IKEA", # IKEA スウェーデンカフェ とかもある
     "ラフォーレ",
     "東急プラザ",
     "ダイエー",
     ".*テンポス",
+    "無印良品",
+    ".*業務スーパー",
+    "シャポー",
+    # ホテルーーーーーーーーーー
+    "アパホテル",
+    "ホテルリブマックス",
+    "ホテルルートイン",
     "アパマンショップ",
-    "ユウキホーム",
     "TOHOシネマズ",
-    # ".*ほっともっと", # ウーバーもあるので、消さない！
+    "スーパーホテル",
+    # その他ーーーーーーーーーー
+    ".*ティップネス",
+    ".*ふなっこ畑",
+    ".*銀座惣菜店",
+    "メルカート",
+    ".*美容室",
+    # "",
     # "",
     # "",
 ]
 # .*が付いてないものは商業施設。頭に何も付かないもの限定。つまり施設そのもの。
 
 
-def chain_replace(store_name):
-    store_name = store_name.replace(' ', '')
+def chain_replace(store_name: str) -> str:
 
     chain_dict = {
         "新宿さぼてん": {
@@ -269,24 +310,25 @@ def chain_replace(store_name):
             "short": "銀座ライオン",
             "long": "ビアホール銀座ライオン"
         },
-        # "": {
-        #     "short": "",
-        #     "long": ""
-        # },
-        # "": {
-        #     "short": "",
-        #     "long": ""
-        # },
-        # "": {
-        #     "short": "",
-        #     "long": ""
-        # },
+        "とんでん": {
+            "short": "和食レストランとんでん",
+            "long": "北海道生まれ和食処とんでん"
+        },
+        "扇屋": {
+            "short": "扇屋",
+            "long": "やきとりの扇屋"
+        },
+        "いきなり": {
+            "short": "いきなりステーキ",
+            "long": "いきなり！ステーキ"
+        },
         # "": {
         #     "short": "",
         #     "long": ""
         # },
     }
 
+    store_name = store_name.replace(' ', '')
     # chain_dict keyを回して該当するかチェック
     hit = [s for s in chain_dict.keys() if s.replace(' ', '') in store_name]
     if len(hit) == 1:
@@ -295,12 +337,14 @@ def chain_replace(store_name):
             replaced_name = store_name.replace(chain_dict[hit]["long"].replace(' ', ''), chain_dict[hit]["short"].replace(' ', ''))
         elif chain_dict[hit]["short"].replace(' ', '') in store_name:
             replaced_name = store_name.replace(chain_dict[hit]["short"].replace(' ', ''), chain_dict[hit]["long"].replace(' ', ''))
+        else:
+            replaced_name = ""
         return replaced_name
     else:
         return None
 
 
-def regist_category(store_obj, category_list, errorlist=None):
+def category_set(store_obj, category_list, errorlist=None):
     # カテゴリ登録
     try:
         attrs = [
@@ -316,3 +360,37 @@ def regist_category(store_obj, category_list, errorlist=None):
         print(f'カテゴリ登録failed.. {e}')
         if errorlist:
             errorlist.append((type(e), e, category_list))
+
+
+def name_set(store_obj: models.Store, store_name: str, media_type: str, yomigana: str = "", yomi_roma: str = ""):
+
+    store_obj.update_name(store_name, media_type)
+
+    if media_type == "tb" and (yomigana or yomi_roma):
+        store_obj.update_name(store_name)
+
+    if (yomigana and media_type == "tb") or (yomigana and media_type == "gn" and not store_obj.yomigana):
+        store_obj.yomigana = yomigana
+        store_obj.save()
+    # elif not store_obj.yomigana:
+    #     kakasi = pykakasi.kakasi()
+    #     name_hira = kakasi.convert(store_name.strip().replace(' ', ''))
+    #     name_hira = "".join([s["hira"] for s in name_hira])
+    #     store_obj.yomigana = name_hira
+    #     store_obj.save()
+
+    if (yomi_roma and media_type == "tb") or (yomi_roma and media_type == "gn" and not store_obj.yomi_roma):
+        store_obj.yomi_roma = yomi_roma
+        store_obj.save()
+    # elif not store_obj.yomi_roma:
+    #     kakasi = pykakasi.kakasi()
+    #     name_roma = kakasi.convert(store_name.strip().replace(' ', ''))
+    #     name_roma = "".join([s["hepburn"] for s in name_roma])
+    #     store_obj.yomi_roma = name_roma
+    #     store_obj.save()
+
+
+def address_set(store_obj, address, media_type):
+    if (address and not store_obj.address) or (address and media_type == "gn") or (address and media_type == "tb"):
+        store_obj.address = address
+        store_obj.save()

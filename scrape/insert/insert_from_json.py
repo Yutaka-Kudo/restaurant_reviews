@@ -33,12 +33,21 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
     ZEN2HAN = str.maketrans(ZEN, HAN)
     # HAN2ZEN = str.maketrans(HAN, ZEN)
 
+    with open(file) as f:
+        jfile = json.load(f)
+    # jfile = jfile[-79:]
+
+    # エリア別ignore_list
+    try:  # あったら読み込む
+        with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/IGNORENAME_{area1}_{area2}.txt") as f:
+            IGNORE_STORE_NAME_BY_AREA = [s.strip() for s in f.readlines()]
+    except Exception:  # なければ作っとく
+        with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/IGNORENAME_{area1}_{area2}.txt", "x") as f:
+            # f.write("")
+            pass
+        IGNORE_STORE_NAME_BY_AREA = []
+
     try:
-        with open(file) as f:
-            jfile = json.load(f)
-
-        # jfile = jfile[-79:]
-
         print(area1 + " " + area2)
 
         media_type_obj = models.Media_type.objects.get(media_type=media_type)
@@ -71,13 +80,11 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             }
         )
         # 初めてフラグ
-        first_time = True if _created else False
+        # first_time = True if _created else False
+        first_time = True if media_type == "tb" else False
         # ーーーーーーーーーーーーーーーー
 
         def create_ignoreList():
-            # area1_word = area1[:-1]
-            # area2_word = area2 if area1 == "東京都" else area2[:-1]
-            # ignore_list = [' ', area1_word, area2_word, "店", "個室", "居酒屋"]
             ignore_list = [' ', "店", "個室", "居酒屋"]
             # ignore_listに英語も入れる
             tr = Translator()
@@ -100,7 +107,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         jfile_length = len(jfile)
 
         for store_data in jfile:
-            print(f'あと {jfile_length}')
+            print(f'\nあと {jfile_length}')
             atode_dict = {}
 
             store_name = store_data["name"]
@@ -108,6 +115,11 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
 
             # 除外ネームならcontinue
             if store_name in IGNORE_STORE_NAME:
+                jfile_length -= 1
+                print('除外ネーム')
+                continue
+            # 除外ネームならcontinue by_area
+            if store_name in IGNORE_STORE_NAME_BY_AREA:
                 jfile_length -= 1
                 print('除外ネーム')
                 continue
@@ -153,6 +165,12 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 yomi_roma = ""
             # ーーーーーーーーーーーー
 
+            # refill用ーーーーーーーー
+            try:
+                origin_name = store_data["origin_name"]
+            except Exception:
+                origin_name = ""
+
             # 店名でstore_object取得  1番近いものを探すーーーー
             store_obj, _atode_flg, _atode_dict, _created_list, _chain_list = store_model_process(
                 area_obj=area_obj,
@@ -164,8 +182,14 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 category_list=category_list,
                 yomigana=yomigana,
                 yomi_roma=yomi_roma,
-                first_time=first_time
+                first_time=first_time,
+                origin_name=origin_name,
             )
+
+            if not store_obj:
+                print('店名消しちゃったor変えちゃった')
+                jfile_length -= 1
+                continue
 
             atode_flg = _atode_flg
             atode_dict.update(_atode_dict)
@@ -178,7 +202,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             except Exception:
                 collected = None
 
-            url = store_data["url"]
+            url = store_data["url"][:1000]
 
             try:
                 rate = store_data["rate"]
@@ -328,7 +352,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         if atode_list:
             # subprocess.run(["say", "選びなさい"])
             subprocess.run(['noti', "-t", "next.あとでプロセス", "-m", f"{filename}"])
-            _created_list, not_adopted_list, doubt_list = atode_process(atode_list, media_type, media_type_obj, area_obj)
+            _created_list, not_adopted_list, doubt_list, delete_list = atode_process(atode_list, media_type, media_type_obj, area_obj)
 
             created_list += _created_list
 
@@ -338,9 +362,6 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             pp(not_adopted_list)
 
             if doubt_list:
-                print('疑わしきは、 ')
-                pp(doubt_list)
-
                 import datetime
                 # n = datetime.datetime.now() + datetime.timedelta(hours=9)
                 n = datetime.datetime.now()
@@ -349,6 +370,21 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                         f.write(f"{line}\n")
                         if i % 2 == 1:
                             f.write("\n")
+                print('doubt_list作成！')
+            if delete_list:
+                # 既存のファイルの末尾が改行になってるか
+                try:
+                    with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/IGNORENAME_{area1}_{area2}.txt", "r") as f:
+                        reads = f.read()[-1]
+                except Exception:
+                    reads = "\n"
+                with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/IGNORENAME_{area1}_{area2}.txt", "a") as f:
+                    if reads == "\n":
+                        f.write("\n".join(delete_list))
+                    else:
+                        f.write("\n")
+                        f.write("\n".join(delete_list))
+                print('delete_list作成')
 
         # エリア別登録数、登録------------
         area_obj.registed = len(models.Store.objects.filter(area=area_obj))

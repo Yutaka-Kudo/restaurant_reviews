@@ -77,18 +77,18 @@ def scrape_tb():
         from site_packages.my_module import capture, Wait_located
         from scrape.scrape_kit import generate_json, endpage_memo, address_ng_memo
 
-    # area1 = "千葉県"
-    # area2s = [
-    #     "船橋市",
-    #     # "市川市",
-    #     # "千葉市",
-    #     # "松戸市",
-    #     # "銚子市",
-    #     # "館山市",
-    #     # "",
-    #     # "",
-    #     # "",
-    # ]
+    area1 = "千葉県"
+    area2s = [
+        # "船橋市",
+        # "市川市",
+        "千葉市",
+        # "松戸市",
+        # "銚子市",
+        # "館山市",
+        # "",
+        # "",
+        # "",
+    ]
 
     # area1 = "東京都"
     # area2s = [
@@ -202,8 +202,8 @@ def scrape_tb():
     # page_range = range(1,3)
 
     range_list = [
-        # range(15, 35),
-        range(35, 50),
+        range(1, 30),
+        range(30, 60),
         # range(1, 30),
         # range(1, 21),
         # range(21, 41),
@@ -240,25 +240,26 @@ def scrape_tb():
 
     for area1, area2 in area_list:
 
-        driver.get('https://tabelog.com/')
-
-        # 思った通りの第一候補が取れない際
-        try:
-            area2alias = alias_dict[area2]
-        except KeyError:
-            area2alias = area2
-        print(f'area2alias {area2alias}')
-
-        area_input = driver.find_element_by_id('sa')
-        if area1 == "東京都":
-            area_input.send_keys(f'{area2alias}駅' + Keys.ENTER)
-        else:
-            area_input.send_keys(f'{area2alias}' + Keys.ENTER)
-        sleep(2)
-
         # page_rangeをわけてある
         for page_range in range_list:
             start_page = list(page_range)[0]
+
+            driver.get('https://tabelog.com/')
+
+            # 思った通りの第一候補が取れない際
+            try:
+                area2alias = alias_dict[area2]
+            except KeyError:
+                area2alias = area2
+            print(f'area2alias {area2alias}')
+
+            area_input = driver.find_element_by_id('sa')
+            if area1 == "東京都":
+                area_input.send_keys(f'{area2alias}駅' + Keys.ENTER)
+            else:
+                area_input.send_keys(f'{area2alias}' + Keys.ENTER)
+            sleep(2)
+
 
             atode_list = []
             address_ng_list = []

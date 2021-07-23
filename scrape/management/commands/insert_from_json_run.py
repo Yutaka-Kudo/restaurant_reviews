@@ -13,6 +13,7 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
     def handle(self, *args, **options):
 
         filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/*.json")
+        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/google_千葉県_習志野市_補充_2021-07-22_1729.json")
         for file in filepaths:
             filename = os.path.basename(file)
             # subprocess.run(['say', 'スタート'])
@@ -28,7 +29,7 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
             insert_from_json(file, area1, area2, media_type)
 
             try:
-                shutil.move(file, "/Users/yutakakudo/Google ドライブ/colab/json/使用済")
+                shutil.move(file, "/Users/yutakakudo/Google ドライブ/colab/json/使用済2")
             except Exception as e:
                 os.remove(file)
                 print(type(e), e)

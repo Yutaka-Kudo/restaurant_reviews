@@ -1,8 +1,28 @@
 import unittest
 from devtools import debug
+import datetime
+from dateutil.relativedelta import relativedelta
 
 from sub import chain_replace
 
+# from scrape import models
+
+
+# class Test_find_latest_review(unittest.TestCase):
+#     name = "ARATA"
+#     area_obj = models.Area.objects.get(area_name="大阪府 梅田")
+#     def find_latest_review(self, name):
+#         store_obj = models.Store.objects.get(store_name=name, area=area_obj)
+#         reviews = models.Review.objects.filter(media__store=store_obj)
+#         rescue_flg = False
+#         for rev in reviews:
+#             if rev.review_date > datetime.datetime.now().date() - relativedelta(months=18):
+#                 rescue_flg = True
+#                 break
+#         # return store_obj, rescue_flg
+#         print("rescue_flg",rescue_flg)
+#         self.assertEqual(rescue_flg, False)
+    
 
 class TestChainReplace(unittest.TestCase):
     def test_chain_replace(self):

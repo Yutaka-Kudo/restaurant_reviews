@@ -3,7 +3,7 @@ import json
 import os
 
 
-def generate_json(atode_list, media, area1, area2, start_page, page_num):
+def generate_json(atode_list, media, area1, area2, start_page=0, page_num=0):
     if os.getenv('HOME') == "/root":
         json_path = "/content/drive/MyDrive/colab/json"
         n = datetime.datetime.now() + datetime.timedelta(hours=9)
@@ -16,8 +16,12 @@ def generate_json(atode_list, media, area1, area2, start_page, page_num):
     def date_trans_json(obj):
         if isinstance(obj, datetime.datetime):
             return obj.strftime('%Y-%m-%d')
-    with open(f"{json_path}/{media}_{area1}_{area2}_{start_page}から{page_num}_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
-        json.dump(atode_list, f, indent=4, default=date_trans_json)
+    if start_page:
+        with open(f"{json_path}/{media}_{area1}_{area2}_{start_page}から{page_num}_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
+            json.dump(atode_list, f, indent=4, default=date_trans_json)
+    else:
+        with open(f"{json_path}/{media}_{area1}_{area2}_補充_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
+            json.dump(atode_list, f, indent=4, default=date_trans_json)
     print('json dump 作成！！！！！！')
 
 
