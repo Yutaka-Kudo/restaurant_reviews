@@ -1,5 +1,4 @@
 import pykakasi
-import json
 from pprint import pprint as pp
 import pytz
 import datetime
@@ -8,13 +7,14 @@ from time import sleep
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
 import random
+
 
 def scrape_gn():
     options = webdriver.ChromeOptions()
-    # options.add_argument('--headless')
-    # options.add_argument('--disable-dev-shm-usage')
-
+    options.add_argument('--headless')
+    options.add_argument('--disable-dev-shm-usage')
 
     user_agent = [
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.2 Safari/605.1.15',
@@ -46,9 +46,7 @@ def scrape_gn():
 
     # from webdriver_manager.chrome import ChromeDriverManager
 
-
     # from scrape import driver_settings
-
 
     try:
         from my_module import capture, Wait_located
@@ -57,76 +55,79 @@ def scrape_gn():
         from site_packages.my_module import capture, Wait_located
         from scrape.scrape_kit import generate_json, endpage_memo, address_ng_memo
 
-        # area1 = "千葉県"
-    # area2 = "船橋市"
-    # area2 = "市川市"
-    # area2 = "千葉市"
-    # area2 = "松戸市"
-    # area2 = "銚子市"
-    # area2 = "館山市"
-
+    area1 = "千葉県"
+    area2s = [
+        # "船橋市",
+        # "市川市",
+        # "千葉市",
+        "柏市",
+        # "松戸市",
+        # "銚子市",
+        # "館山市",
+        # "",
+        # "",
+        # "",
+    ]
 
     # area1 = "東京都"
     # area2s = [
-        # "中目黒",
-        # "新宿",
-        # "渋谷",
-        # "吉祥寺",
-        # "銀座",
-        # "新橋",
-        # "六本木",
-        # "大久保",
-        # "池袋",
-        # "有楽町",
-        # "日本橋",
-        # "お台場",
-        # "中野",
-        # "北千住",
-        # "町田",
-        # "高田馬場",
-        # "上野",
-        # "浅草",
-        # "恵比寿",
-        # "練馬",
-        # "板橋",
-        # "赤羽",
-        # "国分寺",
+    # "中目黒",
+    # "新宿",
+    # "渋谷",
+    # "吉祥寺",
+    # "銀座",
+    # "新橋",
+    # "六本木",
+    # "大久保",
+    # "池袋",
+    # "有楽町",
+    # "日本橋",
+    # "お台場",
+    # "中野",
+    # "北千住",
+    # "町田",
+    # "高田馬場",
+    # "上野",
+    # "浅草",
+    # "恵比寿",
+    # "練馬",
+    # "板橋",
+    # "赤羽",
+    # "国分寺",
 
-        # "麻布",
-        # "原宿",
-        # "青山",
-        # "秋葉原",
-        # "水道橋",
-        # "自由が丘",
-        # "三軒茶屋",
-        # "二子玉川",
-        # "錦糸町",
-        # "押上",
-        # "新小岩",
-        # "蒲田",
-        # "立川",
-        # "八王子",
-        # "新小岩",
-        # "神楽坂",
-        # "巣鴨",
-        # "品川",
-        # "五反田",
-        # "大崎",
-        # "下北沢",
-        # "明大前",
-        # "人形町",
-        # "門前仲町",
-        # "葛西",
-        # "府中",
-        # "調布",
+    # "麻布",
+    # "原宿",
+    # "青山",
+    # "秋葉原",
+    # "水道橋",
+    # "自由が丘",
+    # "三軒茶屋",
+    # "二子玉川",
+    # "錦糸町",
+    # "押上",
+    # "新小岩",
+    # "蒲田",
+    # "立川",
+    # "八王子",
+    # "新小岩",
+    # "神楽坂",
+    # "巣鴨",
+    # "品川",
+    # "五反田",
+    # "大崎",
+    # "下北沢",
+    # "明大前",
+    # "人形町",
+    # "門前仲町",
+    # "葛西",
+    # "府中",
+    # "調布",
 
     # ]
-
 
     # area1 = "埼玉県"
     # area2 = "さいたま市"
     # area2 = "上尾市"
-
 
     # area1 = "大阪府"
     # area2s = [
@@ -145,70 +146,100 @@ def scrape_gn():
     #     # "",
     # ]
 
-
-    area1 = "神奈川県"
-    area2s = [
-        # "横浜市",
-        "鎌倉市",
-        # "",
-        # "",
-        # "",
-        # "",
-    ]
+    # area1 = "神奈川県"
+    # area2s = [
+    #     # "横浜市",
+    #     "鎌倉市",
+    #     # "",
+    #     # "",
+    #     # "",
+    #     # "",
+    # ]
 
     area_list = []
     for area2 in area2s:
         area_list.append([area1, area2])
 
-    # page_range = range(1,3)
-    # page_range = range(1,10)
+    page_range = range(1, 50)
     # page_range = range(10,20)
-    # page_range = range(1,20)
 
-    page_range = range(28, 30)
     # page_range = range(30,60)
-
-    # page_range = range(3,4)
 
     media = "gn"
 
-    driver = webdriver.Chrome('chromedriver', options=options)
-    # driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
+    alias_dict = {
+        "麻布": "麻布十番",
+        "青山": "青山一丁目",
+        "大宮": "大宮市",  # 都内や大阪以外の場所ならダミーで「市」をつけたり。
+        "浦和": "浦和市",
+        "千葉市": "千葉駅市",
+        # "" : "",
+        # "" : "",
+        # "" : "",
+    }
+
+    # driver = webdriver.Chrome('chromedriver', options=options)
+    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options)
     sleep(3)
     dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
 
     start_page = list(page_range)[0]
 
-
     for area1, area2 in area_list:
+
         driver.get('https://www.gnavi.co.jp/')
 
         area_input = driver.find_element_by_id('js-suggest-area')
         area_input.send_keys(area1)
         dw.wait_lacated_class_name('p-search__button').click()
         sleep(5)
-        dw.wait_lacated_class_name('search-group__block-trigger').click()
-        sleep(1)
-        if area1 == "東京都" or area1 == "大阪府":  # 東京のarea2は〜市がつかないため
-            driver.find_elements_by_xpath(f"//a[contains(@data-value,'{area2}')]")[-1].click()
-        else:
-            driver.find_elements_by_xpath(f"//a[contains(@data-value,'{area2[:-1]}')]")[-1].click()
-        sleep(1)
-        dw.wait_lacated_xpath("//input[@value='検索する']").click()
-        sleep(5)
+
+        # area2の別名あれば変更ーーーーーー
+        # ぐるなび内に存在する駅名に変換
         try:
-            dw.wait_lacated_class_name('search-group__block-trigger').click()
-            sleep(1)
-            dw.wait_lacated_link_text('市区町村').click()
-            sleep(1)
-            dw.wait_lacated_link_text(area2).click()
-            sleep(1)
-        except Exception:
+            area2alias = alias_dict[area2]
+        except KeyError:
+            area2alias = area2
+        print(f'area2alias {area2alias}')
+        # ーーーーーーーーーーーーーーーー
+
+        if area1 == "東京都" or area1 == "大阪府":
             input_area = driver.find_element_by_id('js-headbar-input-area')
             input_area.clear()
-            input_area.send_keys(area2[:-1])
+            input_area.send_keys(area2alias)
+
+        else:
+            try:
+                driver.find_element_by_class_name('search-group__block-trigger').click()
+                sleep(1)
+                driver.find_elements_by_xpath(f"//a[contains(@data-value,'{area2alias[:-1]}')]")[-1].click()
+                sleep(1)
+                driver.find_element_by_xpath("//input[@value='検索する']").click()
+                sleep(5)
+                driver.find_element_by_class_name('search-group__block-trigger').click()
+                sleep(1)
+                driver.find_element_by_link_text('市区町村').click()
+                sleep(1)
+                driver.find_element_by_link_text(area2alias).click()
+                sleep(1)
+                print('エリア選択OK')
+            except Exception:  # 選択肢がなければサーチボックスに直接area2を入力
+                input_area = driver.find_element_by_id('js-headbar-input-area')
+                input_area.clear()
+                input_area.send_keys(area2alias[:-1])
+                print('直接入力')
+
         dw.wait_lacated_xpath("//input[@value='検索する']").click()
         sleep(5)
+
+        # 「全〜件」が表示されなければエラーにする
+        try:
+            print(driver.find_element_by_id('gn_pageH1').text)
+            driver.find_element_by_class_name('result-stats')
+        except Exception:
+            print('エリア入力のエラー')
+            driver.quit()
+            raise Exception()
 
         # if area2 != "千葉市":  # 市が大きくていくつかに分かれてる場合、無視してそのまま収集
         #     dw.wait_lacated_class_name('search-group__block-trigger').click()
@@ -251,7 +282,7 @@ def scrape_gn():
             raise Exception(e)
 
         # try:
-        if page_end_flg == False:
+        if page_end_flg is False:
             for page_num in page_range:
                 print(' ')
                 print(f'ペーーーじーーーーーー{page_num}')
@@ -332,7 +363,7 @@ def scrape_gn():
                             locality = driver.find_element_by_class_name('locality').text
                         except NoSuchElementException:
                             locality = ""
-                        # print(address)
+                        print(address)
                         address = region + " " + locality
                     except Exception:
                         address_ng_list.append(store_name)

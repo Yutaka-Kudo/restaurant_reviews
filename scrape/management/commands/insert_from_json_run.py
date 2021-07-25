@@ -1,19 +1,19 @@
+# from scrape.insert.insert_from_json import insert_from_json
+import scrape.insert.insert_from_json
 from django.core.management.base import BaseCommand
 # import json
 import os
 from glob import glob
 import shutil
 import subprocess
-
-
-from scrape.insert.insert_from_json import insert_from_json
+import importlib
 
 
 class Command(BaseCommand):  # コマンド python manage.py ~~
     def handle(self, *args, **options):
 
-        filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/*.json")
-        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/google_千葉県_習志野市_補充_2021-07-22_1729.json")
+        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/*.json")
+        filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/gn_千葉県_木更津市_1から30_2021-07-25_1338.json")
         for file in filepaths:
             filename = os.path.basename(file)
             # subprocess.run(['say', 'スタート'])
@@ -26,7 +26,10 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
             media_type = file.split('_')[0].split('/')[-1]
             print(f"media_type {media_type}")
 
-            insert_from_json(file, area1, area2, media_type)
+            importlib.reload(scrape.insert.insert_from_json)
+            print("モジュールリロード")
+
+            scrape.insert.insert_from_json.insert_from_json(file, area1, area2, media_type)
 
             try:
                 shutil.move(file, "/Users/yutakakudo/Google ドライブ/colab/json/使用済2")
@@ -35,7 +38,7 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
                 print(type(e), e)
                 print('ファイルが重複していましたが、削除して続けます。')
 
-        subprocess.run(['noti', '-m', f"!!!!!!!End!!!!!!!"])
+        subprocess.run(['noti', '-m', "!!!!!!!End!!!!!!!"])
 
         # if media_type == "gn":
         #     insert_from_json_gn(file, area1, area2, media_type)

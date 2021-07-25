@@ -25,8 +25,8 @@ import random
 def scrape_tb():
 
     options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
-    options.add_argument('--disable-dev-shm-usage')
+    # options.add_argument('--headless')
+    # options.add_argument('--disable-dev-shm-usage')
 
     user_agent = [
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.2 Safari/605.1.15',
@@ -81,7 +81,8 @@ def scrape_tb():
     area2s = [
         # "船橋市",
         # "市川市",
-        "千葉市",
+        # "千葉市",
+        "柏市",
         # "松戸市",
         # "銚子市",
         # "館山市",
@@ -203,7 +204,7 @@ def scrape_tb():
 
     range_list = [
         range(1, 30),
-        range(30, 60),
+        range(30, 61),
         # range(1, 30),
         # range(1, 21),
         # range(21, 41),
@@ -234,15 +235,14 @@ def scrape_tb():
         # "" : "",
     }
 
-    driver = webdriver.Chrome('chromedriver', options=options)
-    # driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
+    # driver = webdriver.Chrome('chromedriver', options=options)
+    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options)
     dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
 
     for area1, area2 in area_list:
 
         # page_rangeをわけてある
         for page_range in range_list:
-            start_page = list(page_range)[0]
 
             driver.get('https://tabelog.com/')
 
@@ -260,6 +260,7 @@ def scrape_tb():
                 area_input.send_keys(f'{area2alias}' + Keys.ENTER)
             sleep(2)
 
+            start_page = list(page_range)[0]
 
             atode_list = []
             address_ng_list = []
@@ -344,8 +345,22 @@ def scrape_tb():
                         print(store_name)
 
                         try:
+                            alias_name: str = driver.find_element_by_class_name('alias').text.replace("）", "").replace("（", "").replace(" ", "").replace("　", "")
+                            if alias_name.isascii() and alias_name != "":
+                                yomi_roma = alias_name
+                                yomigana = ""
+                            else:
+                                yomigana = alias_name
+                                yomi_roma = ""
+                        except Exception:
+                            yomigana = ""
+                            yomi_roma = ""
+                        atode_dict["yomigana"] = yomigana
+                        atode_dict["yomi_roma"] = yomi_roma
+
+                        try:
                             address = driver.find_element_by_class_name('rstinfo-table__address').text
-                            # print(address)
+                            print(address)
                         except Exception:
                             address_ng_list.append(store_name)
                             address = ""

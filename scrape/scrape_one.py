@@ -65,13 +65,13 @@ driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=option
 
 area1 = "千葉県"
 area2s = [
-    # "船橋市",
+    "船橋市",
     # "市川市",
     # "千葉市",
     # "習志野市",
     # "松戸市",
     # "銚子市",
-    "館山市",
+    # "館山市",
     # "",
     # "",
     # "",
@@ -192,7 +192,7 @@ driver.get('https://google.com/?hl=ja')
 area_input = driver.find_element_by_css_selector('body > div > div:nth-child(3) > form > div > div > div > div > div:nth-child(2) > input')
 area_input.send_keys(f'{area1+area2} 飲食店' + Keys.ENTER)
 driver.find_element_by_link_text('すべて表示').click()
-scrape_one_sub.scrape_one(driver,"google", area1, area2, "ドン")
+scrape_one_sub.scrape_one(driver,"google", area1, area2, "7丁目イタリア食堂 Makita （マキタ）")
 
 
 import importlib

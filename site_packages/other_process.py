@@ -15,30 +15,18 @@ def clean_store_obj(area_obj):
     store_objs = models.Store.objects.filter(area__area_name="千葉県 船橋市")
     count = store_objs.count()
     destroy = []
+    destroy_name = []
     now = datetime.datetime.now()
     for s in store_objs:
         if len(models.Media_data.objects.filter(store=s)) == 0:
-            destroy.append(s)
-            s.delete()
-        print(f"count あと {count}")
-        count -= 1
-    sa = datetime.datetime.now() - now
-    print("destroy are ", destroy)
-    print(sa)
-
-    # まだ試してない
-    store_objs = models.Store.objects.filter(area__area_name="千葉県 船橋市")
-    count = store_objs.count()
-    destroy = []
-    now = datetime.datetime.now()
-    for s in store_objs:
-        if len(models.Media_data.objects.filter(store=s)) == 0:
+            print(s.store_name)
             destroy.append(s.pk)
+            destroy_name.append(s.store_name)
         print(f"count あと {count}")
         count -= 1
     models.Store.objects.filter(pk__in=destroy).delete()
     sa = datetime.datetime.now() - now
-    print("destroy are ", destroy)
+    print("destroy are ", destroy_name)
     print(sa)
 
     # 確認のみ
@@ -188,22 +176,23 @@ def conflict_integration(childname, childmedia, parentname, area=""):
 
 
 area = "埼玉県 上尾市"
-area = "千葉県 館山市"
+area = "千葉県 柏市"
 area = "千葉県 千葉市"
 area = "千葉県 市川市"
+area = "千葉県 船橋市"
 area = "東京都 新宿"
 area = "東京都 青山"
 area = "大阪府 梅田"
 area = "大阪府 天王寺"
 child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="築地銀だこ", childmedia="google", parentname="", area=area)
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="季節料理 松利", childmedia="gn", parentname="松利", area=area)
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="伊料理zoe’s『台所』", childmedia="gn", parentname="zoe's 台所", area=area)
 child_obj.delete()
 
 
-st = models.Store.objects.get(store_name="イープレイス イングリッシュ&カフェ")
-st.store_name
-st.id
-= "居酒屋 眞"
+st = models.Store.objects.get(store_name="Mare@ 柏本店")
+st.yomigana = None
+st.yomi_roma = None
+st.store_name_gn = None
 st.save()
 me = models.Media_data.objects.filter(store=st)[0]
 
@@ -223,12 +212,12 @@ if input('store消す？y/n: ') == "y":
 ta = models.Store.objects.get(store_name="レストラン", area__area_name__icontains="六本木")
 ta = models.Store.objects.get(store_name="旬菜")
 ta.delete()
-models.Store.objects.get(store_name="まるい鮮魚店", area__area_name=area).delete()
+models.Store.objects.get(store_name="おすすめ 笑味屋", area__area_name=area).delete()
 # models.Store.objects.filter(store_name__startswith="ほっともっと").delete()
-# models.Store.objects.filter(area__area_name="千葉県 松戸市").delete()
+models.Store.objects.filter(area__area_name="千葉県 木更津市").delete()
 
 # googleのmedia_data消す
-ga = models.Media_data.objects.filter(store__area__area_name="千葉県 船橋市", media_type__media_type="uber")
+ga = models.Media_data.objects.filter(store__area__area_name="千葉県 船橋市", media_type__media_type="hp")
 ga.delete()
 
 # models.Media_data.objects.filter(store=5148)

@@ -30,7 +30,8 @@ from site_packages.my_module import collectStoreOtherThanThat
 
 def scrape_google_refill():
     area1 = "千葉県"
-    area2 = "習志野市"
+    area2 = "柏市"
+    # area2 = "習志野市"
     # area2 = "市川市"
     # area2 = "千葉市"
 

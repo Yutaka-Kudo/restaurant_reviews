@@ -180,13 +180,15 @@ def scrape_one(driver, media, area1, area2, origin_name):
             res = driver.page_source
             soup = BeautifulSoup(res, 'html.parser')
             items = soup.select('div.js-rvw-item-clickable-area')[:5]  # 範囲制限
+
+            bulk_review_list = []
             for i, item in enumerate(items):  # 再訪は無視
                 no_data_flg = False
                 log = item.select('.rvw-item__rvwr-balloon-text')[0]
                 log_num = int(log.text.replace(',', '').replace('ログ', ''))
                 content_wrap = item.select_one('.rvw-item__review-contents-wrap')
                 try:
-                    title = content_wrap.select('.rvw-item__title')[0].text.strip()
+                    title = content_wrap.select('.rvw-item__title')[0].text.strip()[:100]
                 except Exception:
                     try:  # タイトルが無い投稿は本文の先頭24文字をとる。
                         title = content_wrap.select('.rvw-item__rvw-comment')[0].text.strip()[:24] + "…"
@@ -218,23 +220,15 @@ def scrape_one(driver, media, area1, area2, origin_name):
 
                     print(review_date, content[:20])
 
-                    rev_obj, _ = models.Review.objects.update_or_create(
-                        media=media_obj, content=content
+                    new_rev_obj = models.Review(
+                        title=title,
+                        content=content,
+                        media=media_obj,
+                        review_date=review_date,
+                        review_point=review_point,
+                        log_num_byTabelog=log_num
                     )
-
-                    if title:
-                        # 長さ制限
-                        if len(title) > 100:
-                            title = title[:100]
-                        rev_obj.title = title
-                    if review_date:
-                        rev_obj.review_date = review_date
-                    if review_point:
-                        rev_obj.review_point = review_point
-                    if log_num:
-                        rev_obj.log_num_byTabelog = log_num
-
-                    rev_obj.save()
+                    bulk_review_list.append(new_rev_obj)
 
                     print('レビュー登録!!')
 
@@ -247,8 +241,9 @@ def scrape_one(driver, media, area1, area2, origin_name):
         except Exception:
             print('口コミクリックエラー')
 
-        def collect_review():
+        def collect_review(already_list: list, bulk_review_list: list):
             sleep(2)
+            # _already_list = []
             for review_num in range(1, 6):
                 try:  # 「もっと見る」があるかないか
                     driver.find_element_by_css_selector(f'div#reviewSort > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type({review_num})').find_element_by_class_name('review-more-link').click()
@@ -263,6 +258,10 @@ def scrape_one(driver, media, area1, area2, origin_name):
                         content = ""
 
                 if content:
+
+                    if content in already_list:
+                        continue
+
                     # 日付け処理ーーーーー
                     review_date = driver.find_element_by_css_selector(f'div#reviewSort > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type({review_num}) > div:nth-of-type(1) > div:nth-of-type(3) > div > span:nth-of-type(1)').text
                     splited = review_date.split(' ')
@@ -286,43 +285,34 @@ def scrape_one(driver, media, area1, area2, origin_name):
                     splited = review_point.split(' ')
                     review_point = float(splited[2])
 
-                    rev_obj, _ = models.Review.objects.update_or_create(
-                        media=media_obj, content=content
+                    new_rev_obj = models.Review(
+                        content=content,
+                        media=media_obj,
+                        review_date=review_date,
+                        review_point=review_point,
                     )
-                    try:
-                        # 長さ制限
-                        if len(title) > 100:
-                            title = title[:100]
-                        rev_obj.title = title
-                    except Exception:
-                        pass
-                    if review_date:
-                        rev_obj.review_date = review_date
-                    if review_point:
-                        rev_obj.review_point = review_point
-                    try:
-                        rev_obj.log_num_byTabelog = log_num
-                    except Exception:
-                        pass
-
-                    rev_obj.save()
+                    bulk_review_list.append(new_rev_obj)
 
                     print('レビュー登録!!')
+                    already_list.append(content)
+            return already_list, bulk_review_list
 
         # データ収集。新規順ボタンが押せない場合があるので2周する。
-        collect_review()
+        already_list = []
+        bulk_review_list = []
+        already_list, bulk_review_list = collect_review(already_list, bulk_review_list)
         try:
             # driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(2) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
             driver.find_element_by_xpath("//div[span[contains(text(),'新規順')]]").click()  # 新規順クリック
 
             print('新規順クリック')
-            collect_review()  # もう一回
+            already_list, bulk_review_list = collect_review(already_list, bulk_review_list)  # もう一回
             sleep(1)
         except Exception:
             try:
                 driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(3) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
                 print('新規順クリック')
-                collect_review()  # もう一回
+                already_list, bulk_review_list = collect_review(already_list, bulk_review_list)  # もう一回
                 sleep(1)
             except Exception:
                 print('新規順クリックerror!!!!!!!!!')
@@ -331,3 +321,7 @@ def scrape_one(driver, media, area1, area2, origin_name):
 
         actions = webdriver.ActionChains(driver)
         actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
+
+    if bulk_review_list:
+        models.Review.objects.bulk_create(bulk_review_list)
+        print('bulkクリエイト レビュー')

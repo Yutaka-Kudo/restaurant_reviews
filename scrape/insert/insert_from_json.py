@@ -35,7 +35,9 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
 
     with open(file) as f:
         jfile = json.load(f)
-    # jfile = jfile[-79:]
+    # jlen = len(jfile)
+    # jfile = jfile[round(jlen / 2):]
+    jfile = jfile[40:60]
 
     # エリア別ignore_list
     try:  # あったら読み込む
@@ -85,7 +87,72 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         # ーーーーーーーーーーーーーーーー
 
         def create_ignoreList():
-            ignore_list = [' ', "店", "個室", "居酒屋"]
+            area2_for_ignore = area2[:-1] if area2[-1] == "市" else area2
+            ignore_list = [
+                ' ',
+                "店",
+                "個室",
+                "居酒屋",
+                area2_for_ignore,
+                # 料理
+                "焼鳥",
+                "焼き鳥",
+                "焼とり",
+                "焼きとり",
+                "やきとり",
+                "蕎麦",
+                "そば",
+                "ラーメン",
+                "らーめん",
+                "拉麺",
+                "中華",
+                "カレー",
+                "串カツ",
+                "串かつ",
+                "焼肉",
+                "焼き肉",
+                "やき肉",
+                "やきにく",
+                "唐揚",
+                "唐揚げ",
+                "から揚げ",
+                "からあげ",
+                "寿司",
+                "鮨",
+                "寿し",
+                "すし",
+                "しゃぶしゃぶ",
+                "串焼",
+                "串焼き",
+                "とんかつ",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                # 業態、特徴
+                "レストラン",
+                "ダイニング",
+                "カフェ",
+                "バー",
+                "炭火",
+                "立ち飲み",
+                "立ち呑み",
+                "",
+                "",
+                "",
+                "",
+                "",
+                # 国
+                "スペイン",
+                "イタリアン",
+                "フランス",
+                "",
+                "",
+                "",
+                "",
+            ]
             # ignore_listに英語も入れる
             tr = Translator()
             # del ignore_list[0] # 最初に入ってる空白を消す
@@ -98,6 +165,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                     print(type(e), e)
             ignore_list += add_ignore
             ignore_list.append("store")
+            print(ignore_list)
             return ignore_list
         ignore_list = create_ignoreList()
 
@@ -105,6 +173,9 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         created_list = []
         chain_list = []
         jfile_length = len(jfile)
+        bulk_md_list = []
+        bulk_delete_list = []
+        bulk_review_list = []
 
         for store_data in jfile:
             print(f'\nあと {jfile_length}')
@@ -215,6 +286,14 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 review_count = 0
 
             if not atode_flg:
+                # media_obj:models.Media_data
+                # media_obj,_ = models.Media_data.objects.update_or_create(store=store_obj, media_type=media_type_obj)
+                # media_obj.collected = collected
+                # media_obj.url = url
+                # media_obj.rate = rate
+                # media_obj.review_count = review_count
+                # bulk_md_list.append(media_obj)
+
                 media_obj, _ = models.Media_data.objects.update_or_create(
                     store=store_obj, media_type=media_type_obj,
                     defaults={
@@ -261,13 +340,22 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 atode_dict["review_count"] = review_count
 
             # 口コミーーーーーーーーーー
+            if atode_flg is False:
+                # データ消して刷新
+                rev_objs = models.Review.objects.filter(media=media_obj).only("pk").values('pk')
+                bulk_delete_list += [r["pk"] for r in rev_objs]
+                print('ReviewObj delete for renewal')
 
             try:
+                already_list = []
                 atode_review_list = []
-                for i, rev in enumerate(store_data["review"]):
+                for rev in store_data["review"]:
+
+                    if rev["content"] in already_list:
+                        continue
 
                     try:
-                        title = rev["title"]
+                        title = rev["title"][:100]  # 長さ制限
                     except KeyError:
                         title = None
                     try:
@@ -289,31 +377,19 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
 
                     if atode_flg is False:
 
-                        if i == 0:  # 初期ループ時にデータ消して刷新
-                            models.Review.objects.filter(media=media_obj).delete()
-                            print('ReviewObj delete for renewal')
-
                         print(date, content[:20])
 
-                        rev_obj, _ = models.Review.objects.update_or_create(
-                            media=media_obj, content=content
+                        new_rev_obj = models.Review(
+                            title=title,
+                            content=content,
+                            media=media_obj,
+                            review_date=date,
+                            review_point=review_point,
+                            log_num_byTabelog=log_num
                         )
+                        bulk_review_list.append(new_rev_obj)
 
-                        if title:
-                            # 長さ制限
-                            if len(title) > 100:
-                                title = title[:100]
-                            rev_obj.title = title
-                        if date:
-                            rev_obj.review_date = date
-                        if review_point:
-                            rev_obj.review_point = review_point
-                        if log_num:
-                            rev_obj.log_num_byTabelog = log_num
-
-                        rev_obj.save()
-
-                        print('レビュー登録!!')
+                        print('レビュー確認!!')
                     else:
                         # {"name":a,"name":a,"phone":a,"url":a,"rate":a,
                         # "review":[{"content":a,"date":a,"log_num":a},{....},{.....}]}
@@ -324,6 +400,8 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                         atode_review_dict["log_num"] = log_num
                         atode_review_dict["review_point"] = review_point
                         atode_review_list.append(atode_review_dict)
+
+                    already_list.append(rev["content"])
 
                 # atode処理ーーーーーーーーー
                 if atode_flg:
@@ -336,6 +414,11 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 atode_list.append(atode_dict)
 
             jfile_length -= 1
+
+        models.Review.objects.filter(pk__in=bulk_delete_list).delete()
+        print('bulk削除 レビュー')
+        models.Review.objects.bulk_create(bulk_review_list)
+        print('bulkクリエイト レビュー')
 
         print('作成は、')
         pp(created_list)
