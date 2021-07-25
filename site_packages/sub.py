@@ -1,3 +1,4 @@
+from decimal import Decimal
 import pykakasi
 
 from scrape import models
@@ -370,7 +371,7 @@ def name_set(store_obj: models.Store, store_name: str, media_type: str, yomigana
 
     store_obj.update_name(store_name, media_type)
 
-    if media_type == "tb" and (yomigana or yomi_roma):
+    if media_type == "tb" and (yomigana or yomi_roma):  # 食べログの名前を正式名称にする
         store_obj.update_name(store_name)
 
     if (yomigana and media_type == "tb") or (yomigana and media_type == "gn" and not store_obj.yomigana):
@@ -398,3 +399,21 @@ def address_set(store_obj, address, media_type):
     if (address and not store_obj.address) or (address and media_type == "gn") or (address and media_type == "tb"):
         store_obj.address = address
         store_obj.save()
+
+
+def setTotalRateForStore(store_md) -> float:
+    rate_md = [md for md in store_md if md.media_type.__str__() in ["gn", "google", "tb", "uber"]]
+    rate_list, total_review_count = [], []
+    for md in rate_md:
+        if md.media_type.__str__() == "tb":  # 食べログ補正
+            rate = md.rate + ((md.rate - Decimal("2.5")) * Decimal(".6"))
+        else:
+            rate = md.rate
+        if md.review_count:
+            rate_list.append(rate * md.review_count)
+            total_review_count.append(md.review_count)
+    try:
+        total_rate = sum(rate_list) / sum(total_review_count)
+    except ZeroDivisionError:
+        total_rate = 0
+    return total_rate

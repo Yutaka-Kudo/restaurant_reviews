@@ -12,8 +12,8 @@ import importlib
 class Command(BaseCommand):  # コマンド python manage.py ~~
     def handle(self, *args, **options):
 
-        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/*.json")
-        filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/gn_千葉県_木更津市_1から30_2021-07-25_1338.json")
+        filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/*.json")
+        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/gn_千葉県_木更津市_1から30_2021-07-25_1338.json")
         for file in filepaths:
             filename = os.path.basename(file)
             # subprocess.run(['say', 'スタート'])

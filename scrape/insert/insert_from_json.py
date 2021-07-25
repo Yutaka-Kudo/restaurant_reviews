@@ -11,7 +11,7 @@ import pykakasi
 
 
 from scrape import models
-from site_packages.my_module import store_model_process, atode_process
+from site_packages.my_module import store_model_process, atode_process, setTotalRateForStore
 from site_packages.sub import IGNORE_STORE_NAME, OTHER_THAN_RESTAURANTS
 
 # st = models.Store.objects.get(store_name="ビアホフ 船橋FACE店")
@@ -37,7 +37,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         jfile = json.load(f)
     # jlen = len(jfile)
     # jfile = jfile[round(jlen / 2):]
-    jfile = jfile[40:60]
+    # jfile = jfile[200:]
 
     # エリア別ignore_list
     try:  # あったら読み込む
@@ -90,6 +90,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             area2_for_ignore = area2[:-1] if area2[-1] == "市" else area2
             ignore_list = [
                 ' ',
+                '　',
                 "店",
                 "個室",
                 "居酒屋",
@@ -153,11 +154,11 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 "",
                 "",
             ]
+            ignore_list = [s for s in ignore_list if s]  # 空削除
             # ignore_listに英語も入れる
             tr = Translator()
-            # del ignore_list[0] # 最初に入ってる空白を消す
             add_ignore = []
-            for src in ignore_list[1:]:
+            for src in ignore_list[2:]:
                 try:
                     en_word = tr.translate(src, src='ja', dest='en').text.lower()
                     add_ignore.append(en_word)
@@ -176,6 +177,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         bulk_md_list = []
         bulk_delete_list = []
         bulk_review_list = []
+        
 
         for store_data in jfile:
             print(f'\nあと {jfile_length}')
@@ -304,28 +306,14 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                     }
                 )
 
-                all_md = models.Media_data.objects.filter(store=store_obj)
-
+                store_md = models.Media_data.objects.filter(store=store_obj)
                 # 店ごとのtotal_rate登録ーーーーー
-                rate_md = [md for md in all_md if md.media_type.__str__() in ["gn", "google", "tb", "uber"]]
-                rate_list, total_review_count = [], []
-                for md in rate_md:
-                    if md.media_type.__str__() == "tb":  # 食べログ補正
-                        rate = md.rate + ((md.rate - Decimal("2.5")) * Decimal(".6"))
-                    else:
-                        rate = md.rate
-                    if md.review_count:
-                        rate_list.append(rate * md.review_count)
-                        total_review_count.append(md.review_count)
-                try:
-                    total_rate = sum(rate_list) / sum(total_review_count)
-                except ZeroDivisionError:
-                    total_rate = 0
+                total_rate = setTotalRateForStore(store_md)
                 store_obj.total_rate = total_rate
                 store_obj.save()
 
                 # 店ごとのtotal_review_count登録ーーーーー
-                rev_cnt_list = [md.review_count for md in all_md if md.review_count]
+                rev_cnt_list = [md.review_count for md in store_md if md.review_count]
                 try:
                     total_review_count = sum(rev_cnt_list)
                 except ZeroDivisionError:
@@ -342,8 +330,8 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             # 口コミーーーーーーーーーー
             if atode_flg is False:
                 # データ消して刷新
-                rev_objs = models.Review.objects.filter(media=media_obj).only("pk").values('pk')
-                bulk_delete_list += [r["pk"] for r in rev_objs]
+                rev_objs = models.Review.objects.filter(media=media_obj).only("pk")
+                bulk_delete_list += [r.pk for r in rev_objs]
                 print('ReviewObj delete for renewal')
 
             try:

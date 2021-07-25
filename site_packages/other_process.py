@@ -4,7 +4,7 @@
 
 
 from scrape import models
-from site_packages.sub import name_set, address_set
+from site_packages.sub import name_set, address_set, setTotalRateForStore
 
 from decimal import Decimal
 import datetime
@@ -180,12 +180,13 @@ area = "千葉県 柏市"
 area = "千葉県 千葉市"
 area = "千葉県 市川市"
 area = "千葉県 船橋市"
+area = "千葉県 木更津市"
 area = "東京都 新宿"
 area = "東京都 青山"
 area = "大阪府 梅田"
 area = "大阪府 天王寺"
 child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="築地銀だこ", childmedia="google", parentname="", area=area)
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="伊料理zoe’s『台所』", childmedia="gn", parentname="zoe's 台所", area=area)
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="寿司 一品料理 君寿司", childmedia="gn", parentname="君寿司", area=area)
 child_obj.delete()
 
 
@@ -297,41 +298,21 @@ def show_madiadata_count():
     print(collections.Counter(category_li))
 
 
-# 店ごとのtotal_rate登録ーーーーー
-def set_total_rate():
-    from decimal import Decimal
-    store_objs = models.Store.objects.all()
-    # store_objs = models.Store.objects.filter(area__area_name="千葉県 船橋市")
-    le = store_objs.count()
-    for st in store_objs:
-        print(le)
-        all_md = models.Media_data.objects.filter(store=st, media_type__media_type__in=["gn", "google", "tb", "uber"])
+# 店ごとのtotal_rate登録ーーーーー----------------
+from decimal import Decimal
+store_objs = models.Store.objects.all()
+# store_objs = models.Store.objects.filter(area__area_name="千葉県 船橋市")
+le = store_objs.count()
+for st in store_objs:
+    print(le)
+    # all_md = models.Media_data.objects.filter(store=st, media_type__media_type__in=["gn", "google", "tb", "uber"])
+    all_md = models.Media_data.objects.filter(store=st)
 
-        rate_list, total_review_count = [], []
+    total_rate = setTotalRateForStore(all_md)
 
-        for md in all_md:
-            if md.media_type.__str__() == "tb":  # 食べログ補正
-                rate = md.rate + ((md.rate - Decimal("2.5")) * Decimal(".6"))
-                # 計算用
-                # a = 4
-                # (a - 2.5)*.6 + a
-                # a*1.2
-            else:
-                rate = md.rate
-            if md.review_count:
-                rate_list.append(rate * md.review_count)
-                total_review_count.append(md.review_count)
-
-        # rate_list = [(md.rate * md.review_count) for md in all_md if md.review_count]
-        # total_review_count = [md.review_count for md in all_md if md.review_count]
-
-        try:
-            total_rate = sum(rate_list) / sum(total_review_count)
-        except ZeroDivisionError:
-            total_rate = 0
-        st.total_rate = total_rate
-        st.save()
-        le -= 1
+    st.total_rate = total_rate
+    st.save()
+    le -= 1
 
 
 # json fileの一部抜き出し

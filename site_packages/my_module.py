@@ -17,7 +17,7 @@ import pykakasi
 from dateutil.relativedelta import relativedelta
 
 
-from site_packages.sub import category_set, name_set, address_set, chain_replace
+from site_packages.sub import category_set, name_set, address_set, chain_replace, setTotalRateForStore
 
 
 def collectStoreOtherThanThat(area_name, media_type):
@@ -384,88 +384,91 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
     def update_or_regist(datalist, flg: str):
         bulk_review_list = []
-        bulk_update_list = []
         bulk_delete_list = []
         length = len(datalist)
-        for store in datalist:
-            print('staaaaaaaaart')
-            # store登録ーーーーーーーーーー
+
+        store_objs = models.Store.objects.filter(area=area_obj)
+        if flg == "regist":
+            # store一括登録ーーーーーーーーー
+            name_list = [store["store_name_site"] for store in datalist]
+            exist_objs = store_objs.filter(store_name__in=name_list).only('store_name')
+            exist_list = [st.store_name for st in exist_objs]
+            name_list = [s for s in name_list if s not in exist_list]
+
+            bulk_create_store_list = []
+            for store_name in name_list:
+                st_obj = models.Store(
+                    store_name=store_name,
+                    area=area_obj
+                )
+                bulk_create_store_list.append(st_obj)
+
+            models.Store.objects.bulk_create(bulk_create_store_list)
+            # ーーーーーーーーーーーーーーーー
+
+        st_obj_list = []
+
+        for i, store in enumerate(datalist):
+            print(f'store処理 あと {length-i}')
             store_obj: models.Store
             if flg == "update":
-                store_obj, _ = models.Store.objects.get_or_create(store_name=store["store_name_db"], area=area_obj)
+                store_obj = [s for s in store_objs if s.store_name == store["store_name_db"]][0]
             elif flg == "regist":
-                store_obj, _ = models.Store.objects.get_or_create(store_name=store["store_name_site"], area=area_obj)
+                store_obj = [s for s in store_objs if s.store_name == store["store_name_site"]][0]
             else:
                 store_obj = None
                 # store_obj = models.Store.objects.none()
                 print('エラー')
+                raise Exception()
 
-            print('モデル処理')
-
-            # 店名
-            store_obj.update_name(store["store_name_site"], media_type)
-            if media_type == "tb":  # 食べログの名前を正式名称にする
-                store_obj.update_name(store["store_name_site"])
-
-            # よみがな
-            if store["yomigana"]:
-                try:
-                    store_obj.yomigana = store["yomigana"]
-                    store_obj.save()
-                except Exception as e:
-                    errorlist.append((type(e), e, store["yomigana"]))
-
-            elif not store_obj.yomigana:
-                kakasi = pykakasi.kakasi()
-                name_hira = kakasi.convert(store_obj.store_name)
-                name_hira = "".join([s["hira"] for s in name_hira])
-
-                store_obj.yomigana = name_hira
-                store_obj.save()
-
-            # よみがなローマ字
-            if store["yomi_roma"]:
-                try:
-                    store_obj.yomi_roma = store["yomi_roma"]
-                    store_obj.save()
-                except Exception as e:
-                    errorlist.append((type(e), e, store["yomi_roma"]))
-
-            elif not store_obj.yomi_roma:
-                kakasi = pykakasi.kakasi()
-                name_roma = kakasi.convert(store_obj.store_name)
-                name_roma = "".join([s["hepburn"] for s in name_roma])
-
-                store_obj.yomi_roma = name_roma
-                store_obj.save()
+            name_set(store_obj, store["store_name_site"], media_type, store["yomigana"], store["yomi_roma"])
 
             # 電話
             if store["phone"] and not store_obj.phone_number:
-                try:
-                    store_obj.phone_number = store["phone"]
-                    store_obj.save()
-                except KeyError as e:
-                    errorlist.append((type(e), e, store["phone"]))
+                store_obj.phone_number = store["phone"]
 
             # 住所
             if (store["address_site"] and not store_obj.address) or (store["address_site"] and media_type == "gn") or (store["address_site"] and media_type == "tb"):
-                try:
-                    store_obj.address = store["address_site"]
-                    store_obj.save()
-                except KeyError as e:
-                    errorlist.append((type(e), e, store["address_site"]))
+                store_obj.address = store["address_site"]
 
             # カテゴリ登録
             if store["category"]:
                 category_set(store_obj, store["category"], errorlist)
 
+            st_obj_list.append(store_obj)
 
-            print('store補足')
+        models.Store.objects.bulk_update(st_obj_list, ["phone_number", "address"])
+        print('bulk store補足')
 
-            # media_data登録ーーーーーー
-            media_obj, _ = models.Media_data.objects.update_or_create(
-                store=store_obj, media_type=media_type_obj
+        md_objs = models.Media_data.objects.select_related("store", "media_type").filter(store__in=st_obj_list)
+        # media_data登録ーーーーーーーーーーーーーー
+        bulk_create_media_list = []
+        exist_objs = md_objs.filter(media_type=media_type_obj)
+        # exist_objs = md_objs.filter(media_type=media_type_obj).only('store')
+        exist_list = [md.store for md in exist_objs]
+        bulk_st_obj_list = [st for st in st_obj_list if st not in exist_list]
+        for st_obj in bulk_st_obj_list:
+            md_obj = models.Media_data(
+                store=st_obj,
+                media_type=media_type_obj
             )
+            bulk_create_media_list.append(md_obj)
+        models.Media_data.objects.bulk_create(bulk_create_media_list)
+        # ーーーーーーーーーーーーーーーーーーーー
+
+        for i, store in enumerate(datalist):
+            print(f'md処理 あと {length-i}')
+
+            media_obj: models.Media_data
+            if flg == "update":
+                media_obj = [s for s in md_objs if s.store.store_name == store["store_name_db"] and s.media_type.media_type == media_type][0]
+            elif flg == "regist":
+                media_obj = [s for s in md_objs if s.store.store_name == store["store_name_site"] and s.media_type.media_type == media_type][0]
+            else:
+                media_obj = None
+                # media_obj = models.Store.objects.none()
+                print('エラー')
+                raise Exception()
 
             if store["collected"]:
                 try:
@@ -492,41 +495,11 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             except KeyError as e:
                 errorlist.append((type(e), e, store["review_count"]))
 
-            all_md = models.Media_data.objects.filter(store=store_obj)
-
-            print('店ごとのtotal_rate登録')
-            # 店ごとのtotal_rate登録ーーーーー
-            rate_md = [md for md in all_md if md.media_type.__str__() in ["gn", "google", "tb", "uber"]]
-            rate_list, total_review_count = [], []
-            for md in rate_md:
-                if md.media_type.__str__() == "tb":  # 食べログ補正
-                    rate = md.rate + ((md.rate - Decimal("2.5")) * Decimal(".6"))
-                else:
-                    rate = md.rate
-                if md.review_count:
-                    rate_list.append(rate * md.review_count)
-                    total_review_count.append(md.review_count)
-            try:
-                total_rate = sum(rate_list) / sum(total_review_count)
-            except ZeroDivisionError:
-                total_rate = 0
-            store_obj.total_rate = total_rate
-            store_obj.save()
-
-            # 店ごとのtotal_review_count登録ーーーーー
-            rev_cnt_list = [md.review_count for md in all_md if md.review_count]
-            try:
-                total_review_count = sum(rev_cnt_list)
-            except ZeroDivisionError:
-                total_review_count = 0
-            store_obj.total_review_count = total_review_count
-            store_obj.save()
-
             # review登録ーーーーーーーー
             if flg == "update":
                 # データ消して刷新
-                rev_objs = models.Review.objects.filter(media=media_obj).only("pk").values('pk')
-                bulk_delete_list += [r["pk"] for r in rev_objs]
+                rev_objs = models.Review.objects.filter(media=media_obj).only("pk")
+                bulk_delete_list += [r.pk for r in rev_objs]
 
             already_list = []
             for review in store["review"]:
@@ -552,30 +525,36 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                     print('レビュー登録失敗↑')
                     errorlist.append((type(e), e, store["store_name_site"], review["title"]))
 
-            if flg == "update":
-                print(f'update OK! {store["store_name_site"]}')
-            elif flg == "regist":
-                _created_list.append(store["store_name_site"])
+        # review登録ーーーーーー
+        models.Review.objects.filter(pk__in=bulk_delete_list).delete()
+        print('bulk削除 レビュー')
+        models.Review.objects.bulk_create(bulk_review_list)
+        print('bulkクリエイト レビュー')
 
-                print(f'regist OK! {store["store_name_site"]}')
+        # 店ごとのtotal_rate登録ーーーーー
+        st_obj_len = len(st_obj_list)
+        for i, st in enumerate(st_obj_list):
+            st: models.Store
+            print(f'total_rate登録 あと {st_obj_len-i} 店')
+            store_md = models.Media_data.objects.filter(store=st)
 
-            length -= 1
-            print(f'あと {length}')
+            total_rate = setTotalRateForStore(store_md)
+            st.total_rate = total_rate
+            st.save()
 
-        return bulk_delete_list, bulk_review_list
+            # 店ごとのtotal_review_count登録ーーーーー
+            rev_cnt_list = [md.review_count for md in store_md if md.review_count]
+            try:
+                total_review_count = sum(rev_cnt_list)
+            except ZeroDivisionError:
+                total_review_count = 0
+            st.total_review_count = total_review_count
+            st.save()
 
     if update_list:
-        bulk_delete_list, bulk_review_list = update_or_regist(update_list, flg="update")
-        models.Review.objects.filter(pk__in=bulk_delete_list).delete()
-        print('bulk削除 レビュー')
-        models.Review.objects.bulk_create(bulk_review_list)
-        print('bulkクリエイト レビュー')
+        update_or_regist(update_list, flg="update")
     if regist_list:
-        bulk_delete_list, bulk_review_list = update_or_regist(regist_list, flg="regist")
-        models.Review.objects.filter(pk__in=bulk_delete_list).delete()
-        print('bulk削除 レビュー')
-        models.Review.objects.bulk_create(bulk_review_list)
-        print('bulkクリエイト レビュー')
+        update_or_regist(regist_list, flg="regist")
 
     # その名前で検索しても出てこない店を調査。口コミがないなら(又は最終口コミがけっこう前)、既に閉店していると判断。店の削除とIGNORENAMEリストに書き込み。
     if kill_list:
