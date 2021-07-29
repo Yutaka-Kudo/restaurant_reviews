@@ -25,8 +25,8 @@ import random
 def scrape_tb():
 
     options = webdriver.ChromeOptions()
-    # options.add_argument('--headless')
-    # options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--headless')
+    options.add_argument('--disable-dev-shm-usage')
 
     user_agent = [
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.2 Safari/605.1.15',
@@ -77,19 +77,19 @@ def scrape_tb():
         from site_packages.my_module import capture, Wait_located
         from scrape.scrape_kit import generate_json, endpage_memo, address_ng_memo
 
-    area1 = "千葉県"
-    area2s = [
-        # "船橋市",
-        # "市川市",
-        # "千葉市",
-        "柏市",
-        # "松戸市",
-        # "銚子市",
-        # "館山市",
-        # "",
-        # "",
-        # "",
-    ]
+    # area1 = "千葉県"
+    # area2s = [
+    #     # "船橋市",
+    #     # "市川市",
+    #     # "千葉市",
+    #     "柏市",
+    #     # "松戸市",
+    #     # "銚子市",
+    #     # "館山市",
+    #     # "",
+    #     # "",
+    #     # "",
+    # ]
 
     # area1 = "東京都"
     # area2s = [
@@ -146,16 +146,16 @@ def scrape_tb():
     #     # "調布",
     # ]
 
-    # area1 = "埼玉県"
-    # area2s = [
-    #     # "さいたま市",
-    #     # "上尾市",
-    #     # "桶川市",
-    #     "大宮",
-    #     # "浦和",
-    #     # "越谷市",
-    #     # "",
-    # ]
+    area1 = "埼玉県"
+    area2s = [
+        # "さいたま市",
+        # "上尾市",
+        # "桶川市",
+        "大宮",
+        # "浦和",
+        # "越谷市",
+        # "熊谷市",
+    ]
 
     # area1 = "大阪府"
     # area2s = [
@@ -239,253 +239,256 @@ def scrape_tb():
     driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options)
     dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
 
-    for area1, area2 in area_list:
+    try:
+        for area1, area2 in area_list:
 
-        # page_rangeをわけてある
-        for page_range in range_list:
+            # page_rangeをわけてある
+            for page_range in range_list:
 
-            driver.get('https://tabelog.com/')
+                driver.get('https://tabelog.com/')
 
-            # 思った通りの第一候補が取れない際
-            try:
-                area2alias = alias_dict[area2]
-            except KeyError:
-                area2alias = area2
-            print(f'area2alias {area2alias}')
+                # 思った通りの第一候補が取れない際
+                try:
+                    area2alias = alias_dict[area2]
+                except KeyError:
+                    area2alias = area2
+                print(f'area2alias {area2alias}')
 
-            area_input = driver.find_element_by_id('sa')
-            if area1 == "東京都":
-                area_input.send_keys(f'{area2alias}駅' + Keys.ENTER)
-            else:
-                area_input.send_keys(f'{area2alias}' + Keys.ENTER)
-            sleep(2)
+                area_input = driver.find_element_by_id('sa')
+                if area1 == "東京都":
+                    area_input.send_keys(f'{area2alias}駅' + Keys.ENTER)
+                else:
+                    area_input.send_keys(f'{area2alias}' + Keys.ENTER)
+                sleep(2)
 
-            start_page = list(page_range)[0]
+                start_page = list(page_range)[0]
 
-            atode_list = []
-            address_ng_list = []
+                atode_list = []
+                address_ng_list = []
 
-            already_list = []
+                already_list = []
 
-            page_end_flg = False
+                page_end_flg = False
 
-            page_range = list(page_range)
-            # 大きいページ番号からスタートの際のページ送り
-            try:
-                if page_range[0] >= 5:
-                    page_num = 5
-                    while page_range[0] > page_num:
-                        driver.find_element_by_xpath(f'//a[@class="c-pagination__num" and text()="{page_num}"]').click()  # ページ
-                        print(f'ページ移動中...{page_num}')
-                        sleep(2)
-                        page_num += 1
-            except NoSuchElementException as e:
-                print(type(e), e)
-                page_end_flg = True
-            except Exception as e:
-                print(type(e), e)
-                print('ページ遷移エラー')
-                raise Exception(e)
+                page_range = list(page_range)
+                # 大きいページ番号からスタートの際のページ送り
+                try:
+                    if page_range[0] >= 5:
+                        page_num = 5
 
-            # try:
-            if page_end_flg is False:
-                for page_num in page_range:
-                    print(' ')
-                    print(f'ペーーーじーーーーーー{page_num}')
-                    if page_num != 1:
-                        try:
+                        capture(driver)
+
+                        while page_range[0] > page_num:
                             driver.find_element_by_xpath(f'//a[@class="c-pagination__num" and text()="{page_num}"]').click()  # ページ
-                        except Exception:
-                            page_end_flg = True
-                            break
+                            print(f'ページ移動中...{page_num}')
+                            sleep(2)
+                            page_num += 1
+                except NoSuchElementException as e:
+                    print(type(e), e)
+                    page_end_flg = True
+                except Exception as e:
+                    print(type(e), e)
+                    print('ページ遷移エラー')
+                    raise Exception(e)
 
-                    dw.wait_lacated_class_name('list-rst__rst-name-target')  # 最初のelementが現れるまで待つ
-                    store_link_list = driver.find_elements_by_class_name('list-rst__rst-name-target')
-                    # store_link_list = driver.find_elements_by_class_name('list-rst__rst-name-target')[:3]
-                    for elem in store_link_list:
-                        atode_flg = False
-                        atode_dict = {}
+                # try:
+                if page_end_flg is False:
+                    for page_num in page_range:
+                        print(' ')
+                        print(f'ペーーーじーーーーーー{page_num}')
+                        if page_num != 1:
+                            try:
+                                driver.find_element_by_xpath(f'//a[@class="c-pagination__num" and text()="{page_num}"]').click()  # ページ
+                            except Exception:
+                                page_end_flg = True
+                                break
 
-                        # try:  # よくここでつまづく
-                        driver.execute_script("window.scrollTo(0, 0);")  # これないと読めないときもある
+                        dw.wait_lacated_class_name('list-rst__rst-name-target')  # 最初のelementが現れるまで待つ
+                        store_link_list = driver.find_elements_by_class_name('list-rst__rst-name-target')
+                        # store_link_list = driver.find_elements_by_class_name('list-rst__rst-name-target')[:3]
+                        for elem in store_link_list:
+                            atode_flg = False
+                            atode_dict = {}
 
-                        elem.click()
+                            # try:  # よくここでつまづく
+                            driver.execute_script("window.scrollTo(0, 0);")  # これないと読めないときもある
 
-                        # except Exception:
-                        #     capture(driver)
-                        #     raise Exception()
+                            elem.click()
 
-                        # webdriver.ActionChains(driver).key_down(Keys.COMMAND).click(elem).perform() # なぜかこれで新規タブで開くと、次の普通クリックでも新規タブが開く
-                        sleep(2)
+                            # except Exception:
+                            #     capture(driver)
+                            #     raise Exception()
 
-                        handle_array = driver.window_handles
-                        driver.switch_to.window(handle_array[-1])
-                        sleep(0.5)
-                        print('handle OK!')
+                            # webdriver.ActionChains(driver).key_down(Keys.COMMAND).click(elem).perform() # なぜかこれで新規タブで開くと、次の普通クリックでも新規タブが開く
+                            sleep(2)
 
-                        # store_name = driver.find_element_by_class_name('display-name').text
-                        store_name = dw.wait_lacated_class_name('display-name').text
+                            handle_array = driver.window_handles
+                            driver.switch_to.window(handle_array[-1])
+                            sleep(0.5)
+                            print('handle OK!')
 
-                        # 絶対飲食以外のワードならcontinue カラオケ等
-                        if [s for s in OTHER_THAN_RESTAURANTS if s in store_name]:
-                            driver.execute_script("window.close();")
-                            driver.switch_to.window(handle_array[0])
-                            sleep(1)
-                            continue
+                            # store_name = driver.find_element_by_class_name('display-name').text
+                            store_name = dw.wait_lacated_class_name('display-name').text
 
-                        # かぶり店
-                        if store_name in already_list:
-                            print('かぶりスキップ！')
-                            driver.execute_script("window.close();")
-                            driver.switch_to.window(handle_array[0])
-                            sleep(1)
-                            continue
+                            # 絶対飲食以外のワードならcontinue カラオケ等
+                            if [s for s in OTHER_THAN_RESTAURANTS if s in store_name]:
+                                driver.execute_script("window.close();")
+                                driver.switch_to.window(handle_array[0])
+                                sleep(1)
+                                continue
 
-                        atode_dict["name"] = store_name
-                        print(store_name)
+                            # かぶり店
+                            if store_name in already_list:
+                                print('かぶりスキップ！')
+                                driver.execute_script("window.close();")
+                                driver.switch_to.window(handle_array[0])
+                                sleep(1)
+                                continue
 
-                        try:
-                            alias_name: str = driver.find_element_by_class_name('alias').text.replace("）", "").replace("（", "").replace(" ", "").replace("　", "")
-                            if alias_name.isascii() and alias_name != "":
-                                yomi_roma = alias_name
+                            atode_dict["name"] = store_name
+                            print(store_name)
+
+                            try:
+                                alias_name: str = driver.find_element_by_class_name('alias').text.replace("）", "").replace("（", "").replace(" ", "").replace("　", "")
+                                if alias_name.isascii() and alias_name != "":
+                                    yomigana = ""
+                                    yomi_roma = alias_name
+                                elif "【" not in alias_name: # 「【旧店名】味都」こんな感じのは除外
+                                    yomigana = alias_name
+                                    yomi_roma = ""
+                            except Exception:
                                 yomigana = ""
-                            else:
-                                yomigana = alias_name
                                 yomi_roma = ""
-                        except Exception:
-                            yomigana = ""
-                            yomi_roma = ""
-                        atode_dict["yomigana"] = yomigana
-                        atode_dict["yomi_roma"] = yomi_roma
+                            atode_dict["yomigana"] = yomigana
+                            atode_dict["yomi_roma"] = yomi_roma
 
-                        try:
-                            address = driver.find_element_by_class_name('rstinfo-table__address').text
-                            print(address)
-                        except Exception:
-                            address_ng_list.append(store_name)
-                            address = ""
-                            print('住所取得NG')
-                        atode_dict["address"] = address
+                            try:
+                                address = driver.find_element_by_class_name('rstinfo-table__address').text
+                                print(address)
+                            except Exception:
+                                address_ng_list.append(store_name)
+                                address = ""
+                                print('住所取得NG')
+                            atode_dict["address"] = address
 
-                        try:
-                            category_list = driver.find_elements_by_class_name('rdheader-subinfo__item-text')[1].text.split('\n')
-                        except Exception:
-                            category_list = None
-                        atode_dict["category"] = category_list
+                            try:
+                                category_list = driver.find_elements_by_class_name('rdheader-subinfo__item-text')[1].text.split('\n')
+                            except Exception:
+                                category_list = None
+                            atode_dict["category"] = category_list
 
-                        try:
-                            phone: str = driver.find_elements_by_class_name('rstinfo-table__tel-num')[-1].text
-                            type(int(phone.replace('-', ''))) == int  # 電話番号が非公開がたまにある
-                        except Exception:
-                            phone = ""
-                        atode_dict["phone"] = phone
+                            try:
+                                phone: str = driver.find_elements_by_class_name('rstinfo-table__tel-num')[-1].text
+                                type(int(phone.replace('-', ''))) == int  # 電話番号が非公開がたまにある
+                            except Exception:
+                                phone = ""
+                            atode_dict["phone"] = phone
 
-                        # debug(store_name, phone)
+                            # debug(store_name, phone)
 
-                        # media_data用ーーー
-                        collected_date = datetime.datetime.now(pytz.timezone("Asia/Tokyo"))
-                        rate = driver.find_element_by_class_name('rdheader-rating__score-val-dtl').text
-                        rate: float = 0 if rate == '-' else float(rate)
-                        review_count = driver.find_element_by_class_name('rdheader-rating__review-target').find_element_by_tag_name('em').text
-                        review_count: int = 0 if review_count == '-' else int(review_count)
+                            # media_data用ーーー
+                            collected_date = datetime.datetime.now(pytz.timezone("Asia/Tokyo"))
+                            rate = driver.find_element_by_class_name('rdheader-rating__score-val-dtl').text
+                            rate: float = 0 if rate == '-' else float(rate)
+                            review_count = driver.find_element_by_class_name('rdheader-rating__review-target').find_element_by_tag_name('em').text
+                            review_count: int = 0 if review_count == '-' else int(review_count)
 
-                        atode_dict["collected"] = collected_date
-                        atode_dict["url"] = driver.current_url
-                        atode_dict["rate"] = rate
-                        atode_dict["review_count"] = review_count
+                            atode_dict["collected"] = collected_date
+                            atode_dict["url"] = driver.current_url
+                            atode_dict["rate"] = rate
+                            atode_dict["review_count"] = review_count
 
-                        # 口コミーーーーーーーーーー
-                        try:  # 口コミボタンが無い店もある
-                            driver.find_element_by_class_name('rstdtl-top-rvwlst__more-link').find_element_by_class_name('c-link-circle').click()
+                            # 口コミーーーーーーーーーー
+                            try:  # 口コミボタンが無い店もある
+                                driver.find_element_by_class_name('rstdtl-top-rvwlst__more-link').find_element_by_class_name('c-link-circle').click()
+                                sleep(1.5)
+                                dw.wait_lacated_link_text('訪問月順').click()
+                            except NoSuchElementException:
+                                print('口コミがありません。')
+                            else:
+                                sleep(1)
+                                print('口コミ発見！！')
+
+                                # 「もっと見る」を全て展開ーーーーーーーー
+                                mottomiru_list = driver.find_elements_by_class_name('js-show-review-items')[:6]  # 範囲制限
+                                for i in mottomiru_list:
+                                    i.click()
+                                    sleep(0.6)  # 早すぎるとバグる
+                                sleep(1)
+                                res = driver.page_source
+                                soup = BeautifulSoup(res, 'html.parser')
+                                items = soup.select('div.js-rvw-item-clickable-area')[:5]  # 範囲制限
+                                atode_review_list = []
+                                for i, item in enumerate(items):  # 再訪は無視
+                                    no_data_flg = False
+                                    log = item.select('.rvw-item__rvwr-balloon-text')[0]
+                                    log_num = int(log.text.replace(',', '').replace('ログ', ''))
+                                    content_wrap = item.select_one('.rvw-item__review-contents-wrap')
+                                    try:
+                                        title = content_wrap.select('.rvw-item__title')[0].text.strip()
+                                    except Exception:
+                                        try:  # タイトルが無い投稿は本文の先頭24文字をとる。
+                                            title = content_wrap.select('.rvw-item__rvw-comment')[0].text.strip()[:24] + "…"
+                                        except Exception:  # 本文もない場合はpass
+                                            no_data_flg = True
+                                            print('no data!!')
+                                    try:
+                                        review_point = item.select_one('.c-rating-v2__val.c-rating-v2__val--strong.rvw-item__ratings--val').get_text(strip=True)
+                                        review_point = float(review_point)
+                                    except Exception:  # 評価値がついてない場合は0で入れるので、その後の表示等の処理を注意
+                                        review_point = 0
+
+                                    if no_data_flg is False:
+                                        content = item.select('.rvw-item__rvw-comment')[0]
+                                        # <br>タグを\nに置き換える
+                                        [s.replace_with('\n') for s in content.select('br')]
+                                        # content = content.text.replace('\u200b', '').replace('\u3000', '').strip()
+                                        content = content.text.strip()
+                                        # print(content)
+
+                                        try:  # 日時が「行った 〜〜」とあるときがある。
+                                            for date_elem in item.select('div.rvw-item__single-date'):
+                                                review_date = date_elem.get_text(strip=True)[:-2]
+                                                review_date = datetime.datetime.strptime(review_date, '%Y/%m')
+                                                break
+                                        except ValueError:
+                                            review_date = None
+
+                                        # {"name":a,"name":a,"phone":a,"url":a,"rate":a,
+                                        # "review":[{"content":a,"date":a,"log_num":a},{....},{.....}]}
+                                        atode_review_dict = {}
+                                        atode_review_dict["title"] = title
+                                        atode_review_dict["content"] = content
+                                        atode_review_dict["date"] = review_date
+                                        atode_review_dict["log_num"] = log_num
+                                        atode_review_dict["review_point"] = review_point
+                                        atode_review_list.append(atode_review_dict)
+
+                                atode_dict["review"] = atode_review_list
+
+                            atode_list.append(atode_dict)
+
+                            # かぶり店
+                            already_list.append(store_name)
+
+                            driver.execute_script("window.close();")
+                            driver.switch_to.window(handle_array[0])
                             sleep(1)
-                        except NoSuchElementException:
-                            print('口コミがありません。')
-                        else:
-                            dw.wait_lacated_link_text('訪問月順').click()
-                            sleep(1)
-                            print('口コミ発見！！')
 
-                            # 「もっと見る」を全て展開ーーーーーーーー
-                            mottomiru_list = driver.find_elements_by_class_name('js-show-review-items')[:6]  # 範囲制限
-                            for i in mottomiru_list:
-                                i.click()
-                                sleep(0.6)  # 早すぎるとバグる
-                            sleep(1)
-                            res = driver.page_source
-                            soup = BeautifulSoup(res, 'html.parser')
-                            items = soup.select('div.js-rvw-item-clickable-area')[:5]  # 範囲制限
-                            atode_review_list = []
-                            for i, item in enumerate(items):  # 再訪は無視
-                                no_data_flg = False
-                                log = item.select('.rvw-item__rvwr-balloon-text')[0]
-                                log_num = int(log.text.replace(',', '').replace('ログ', ''))
-                                content_wrap = item.select_one('.rvw-item__review-contents-wrap')
-                                try:
-                                    title = content_wrap.select('.rvw-item__title')[0].text.strip()
-                                except Exception:
-                                    try:  # タイトルが無い投稿は本文の先頭24文字をとる。
-                                        title = content_wrap.select('.rvw-item__rvw-comment')[0].text.strip()[:24] + "…"
-                                    except Exception:  # 本文もない場合はpass
-                                        no_data_flg = True
-                                        print('no data!!')
-                                try:
-                                    review_point = item.select_one('.c-rating-v2__val.c-rating-v2__val--strong.rvw-item__ratings--val').get_text(strip=True)
-                                    review_point = float(review_point)
-                                except Exception:  # 評価値がついてない場合は0で入れるので、その後の表示等の処理を注意
-                                    review_point = 0
+                if atode_list:
+                    generate_json(atode_list, media, area1, area2, start_page, page_num)
 
-                                if no_data_flg is False:
-                                    content = item.select('.rvw-item__rvw-comment')[0]
-                                    # <br>タグを\nに置き換える
-                                    [s.replace_with('\n') for s in content.select('br')]
-                                    # content = content.text.replace('\u200b', '').replace('\u3000', '').strip()
-                                    content = content.text.strip()
-                                    # print(content)
+                if page_end_flg:
+                    endpage_memo(media, area1, area2, page_num)
 
-                                    try:  # 日時が「行った 〜〜」とあるときがある。
-                                        for date_elem in item.select('div.rvw-item__single-date'):
-                                            review_date = date_elem.get_text(strip=True)[:-2]
-                                            review_date = datetime.datetime.strptime(review_date, '%Y/%m')
-                                            break
-                                    except ValueError:
-                                        review_date = None
+                if address_ng_list:
+                    address_ng_memo(address_ng_list, media, area1, area2)
 
-                                    # {"name":a,"name":a,"phone":a,"url":a,"rate":a,
-                                    # "review":[{"content":a,"date":a,"log_num":a},{....},{.....}]}
-                                    atode_review_dict = {}
-                                    atode_review_dict["title"] = title
-                                    atode_review_dict["content"] = content
-                                    atode_review_dict["date"] = review_date
-                                    atode_review_dict["log_num"] = log_num
-                                    atode_review_dict["review_point"] = review_point
-                                    atode_review_list.append(atode_review_dict)
-
-                            atode_dict["review"] = atode_review_list
-
-                        atode_list.append(atode_dict)
-
-                        # かぶり店
-                        already_list.append(store_name)
-
-                        driver.execute_script("window.close();")
-                        driver.switch_to.window(handle_array[0])
-                        sleep(1)
-
-            if atode_list:
-                generate_json(atode_list, media, area1, area2, start_page, page_num)
-
-            if page_end_flg:
-                endpage_memo(media, area1, area2, page_num)
-
-            if address_ng_list:
-                address_ng_memo(address_ng_list, media, area1, area2)
-
-    # except Exception as e:
-    #     print(type(e))
-    #     print(e)
-    #     print(f'えらー {page_num} キャプチャ！')
-    # capture(driver)
-    #     driver.quit()
-    #     raise Exception()
+    except Exception as e:
+        print(type(e), e)
+        capture(driver)
+        print(f'えらー {page_num} キャプチャ！')
+        driver.quit()
+        raise Exception()
 
     driver.quit()

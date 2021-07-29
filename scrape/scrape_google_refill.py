@@ -22,7 +22,7 @@ try:
     from scrape_kit import generate_json, endpage_memo, address_ng_memo
 except ImportError:
     from site_packages.my_module import capture, Wait_located
-    from scrape.scrape_kit import generate_json, endpage_memo, address_ng_memo
+    from scrape.scrape_kit import generate_json, endpage_memo, address_ng_memo, duplicated_by_google_memo
 
 
 from site_packages.my_module import collectStoreOtherThanThat
@@ -30,10 +30,17 @@ from site_packages.my_module import collectStoreOtherThanThat
 
 def scrape_google_refill():
     area1 = "千葉県"
-    area2 = "柏市"
+    # area2 = "木更津市"
     # area2 = "習志野市"
     # area2 = "市川市"
     # area2 = "千葉市"
+    area2 = "松戸市"
+
+    # area1 = "埼玉県"
+    # area2 = "上尾市"
+    # area2 = "桶川市"
+    # area2 = "熊谷市"
+    # area2 = "浦和"
 
     area_name = area1 + " " + area2
     media = "google"
@@ -48,6 +55,7 @@ def scrape_google_refill():
     area_input = driver.find_element_by_css_selector('body > div > div:nth-child(3) > form > div > div > div > div > div:nth-child(2) > input')
     area_input.send_keys(f'{area_name} 飲食店' + Keys.ENTER)
     sleep(2)
+
     # google検索を引き続きご利用いただく前に、、、
     try:
         driver.find_element_by_xpath('//div[text()="同意する"]').click()
@@ -62,10 +70,10 @@ def scrape_google_refill():
     with open(f"/Users/yutakakudo/Google ドライブ/colab/json/refill_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
         for line in to_collect:
             f.write(f"{line}\n")
-    # with open('/Users/yutakakudo/Google ドライブ/colab/json/refill_千葉県_千葉市_2021-07-18_2304.txt') as f:
+    # with open('/Users/yutakakudo/Google ドライブ/colab/json/refill_埼玉県_浦和_2021-07-28_1644.txt') as f:
     #     to_collect = [s.strip() for s in f.readlines()]
     # # to_collect[-735]
-    # to_collect = to_collect[-735:]
+    # to_collect = to_collect[-820:]
 
     IGNORE_NAME_LIST = [
         "居酒屋",
@@ -175,10 +183,11 @@ def scrape_google_refill():
     ZEN = "".join(chr(0xff01 + i) for i in range(94))
     HAN = "".join(chr(0x21 + i) for i in range(94))
     ZEN2HAN = str.maketrans(ZEN, HAN)
-    HAN2ZEN = str.maketrans(HAN, ZEN)
+    # HAN2ZEN = str.maketrans(HAN, ZEN)
 
     atode_list = []
-    created_list = []
+    # created_list = []
+    # duplicated_list = []
 
     address_ng_list = []
 
@@ -188,6 +197,7 @@ def scrape_google_refill():
 
     try:
         for st_name in to_collect:
+
             print(f'あと {length}')
             search_window = driver.find_element_by_xpath("//input[@aria-label='検索']")
             search_window.clear()
@@ -281,13 +291,15 @@ def scrape_google_refill():
             atode_dict["review_count"] = rev_count
 
             atode_review_list = []
+            no_review_flg = False
             try:
                 driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div:nth-child(2) > div > div > div > span:nth-child(3) > span > a').click()  # 口コミボタンクリック
                 sleep(1)
             except Exception:
-                print('口コミクリックなし or エラー → continue')
-                length -= 1
-                continue
+                print('口コミクリックなし or エラー')
+                # length -= 1
+                # continue
+                no_review_flg = True
 
             def collect_review():
                 sleep(2)
@@ -340,33 +352,40 @@ def scrape_google_refill():
                         atode_review_dict["review_point"] = review_point
                         atode_review_list.append(atode_review_dict)
 
-            # データ収集。新規順ボタンが押せない場合があるので2周する。
-            collect_review()
-            try:
-                # driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(2) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
-                driver.find_element_by_xpath("//div[span[contains(text(),'新規順')]]").click()  # 新規順クリック
-
-                print('新規順クリック')
-                collect_review()  # もう一回
-                # sleep(1)
-            except Exception:
+            if not no_review_flg:
+                # データ収集。新規順ボタンが押せない場合があるので2周する。
+                collect_review()
                 try:
-                    driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(3) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
+                    # driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(2) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
+                    driver.find_element_by_xpath("//div[span[contains(text(),'新規順')]]").click()  # 新規順クリック
+
                     print('新規順クリック')
                     collect_review()  # もう一回
                     # sleep(1)
                 except Exception:
-                    print('新規順クリックerror!!!!!!!!!')
+                    try:
+                        driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(3) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
+                        print('新規順クリック')
+                        collect_review()  # もう一回
+                        # sleep(1)
+                    except Exception:
+                        print('新規順クリックerror!!!!!!!!!')
 
-            # sleep(1)
+                atode_dict["review"] = atode_review_list
 
-            # driver.find_element_by_xpath(f'/html/body/span[{store_num}]/g-lightbox/div[2]/div[2]').click() # 閉じるボタン
-            actions = webdriver.ActionChains(driver)
-            actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
-
-            atode_dict["review"] = atode_review_list
+                # driver.find_element_by_xpath(f'/html/body/span[{store_num}]/g-lightbox/div[2]/div[2]').click() # 閉じるボタン
+                actions = webdriver.ActionChains(driver)
+                actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
 
             atode_list.append(atode_dict)
+
+            # # 重複したものを抜粋ーーーーーーー
+            # if store_name in created_list:
+            #     duplicated_list.append(store_name)
+            #     duplicated_list.append(st_name)
+            #     duplicated_list.append(" \n")
+
+            # created_list.append(store_name)
 
             sleep(2)
             length -= 1
@@ -382,5 +401,8 @@ def scrape_google_refill():
 
     if address_ng_list:
         address_ng_memo(address_ng_list, media, area1, area2)
+
+    # if duplicated_list:
+    #     duplicated_by_google_memo(duplicated_list, area1, area2)
 
     driver.quit()

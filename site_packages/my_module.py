@@ -13,11 +13,12 @@ from janome.analyzer import Analyzer
 from janome.tokenizer import Tokenizer
 import difflib
 import re
-import pykakasi
+# import pykakasi
 from dateutil.relativedelta import relativedelta
 
 
 from site_packages.sub import category_set, name_set, address_set, chain_replace, setTotalRateForStore
+from scrape.scrape_kit import duplicated_by_google_memo
 
 
 def collectStoreOtherThanThat(area_name, media_type):
@@ -83,7 +84,7 @@ class Compare_storeName:
         char_filters = [UnicodeNormalizeCharFilter()]  # 半角 → 全角 等
         token_filters = [LowerCaseFilter(), ExtractAttributeFilter('surface')]  # 小文字に ＆ 抽出する属性
         self.a = Analyzer(char_filters=char_filters, token_filters=token_filters)
-        self.kakasi = pykakasi.kakasi()
+        # self.kakasi = pykakasi.kakasi()
 
     def search_store_name(self, store_name: str, querysets, ignore_list: list = None, media: str = "", min_ratio: float = 0.6, origin_name: str = ""):
         if ignore_list is None:
@@ -207,6 +208,8 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
         # debug(store_kouho_dict)
         store_obj, _ = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
 
+        # debug(store_obj, store_name, media_type, yomigana, yomi_roma) # 検証用
+
         name_set(store_obj, store_name, media_type, yomigana, yomi_roma)
         address_set(store_obj, address, media_type)
 
@@ -271,9 +274,9 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
                 _atode_dict["yomi_roma"] = yomi_roma if yomi_roma else None
 
             elif store_kouho_dict:
-                debug(store_kouho_dict)
+                # debug(store_kouho_dict)
                 store_obj, sub_name_dict = max(store_kouho_dict.items(), key=lambda x: x[1]["ratio"])  # 最大値のkeyを取得
-                debug(store_obj.store_name)
+                debug("似てる名前", store_obj.store_name, sub_name_dict)
 
                 # 同メディアの名前があればスキップして新規作成
                 if getattr(store_obj, f"store_name_{media_type}"):
@@ -307,18 +310,18 @@ def store_model_process(area_obj: models.Area, media_type: str, store_name: str,
     return store_obj, _atode_flg, _atode_dict, _created_list, _chain_list
 
 
-def atode_process(atode_list: list, media_type: str, media_type_obj: models.Media_type, area_obj: models.Area):
+def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.Area, updated_name_list: list = None):
+    mt_str: str = mt_obj.media_type
     errorlist = []
 
     _created_list = []
     not_adopted_list = []
-    kill_list = []
-    delete_list = []
 
     update_list = []
     regist_list = []
 
     doubt_list = []
+    kill_list = []
 
     # debug(atode_list)
 
@@ -374,7 +377,6 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                 submit_regist(doubt=True)
 
             elif submit == "k":
-                doubt_list.append(f'DBの名前    : {store["store_name_db"]}')
                 kill_list.append(store["store_name_db"])
                 print('kill')
 
@@ -416,19 +418,18 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             elif flg == "regist":
                 store_obj = [s for s in store_objs if s.store_name == store["store_name_site"]][0]
             else:
-                store_obj = None
                 # store_obj = models.Store.objects.none()
                 print('エラー')
                 raise Exception()
 
-            name_set(store_obj, store["store_name_site"], media_type, store["yomigana"], store["yomi_roma"])
+            name_set(store_obj, store["store_name_site"], mt_str, store["yomigana"], store["yomi_roma"])
 
             # 電話
             if store["phone"] and not store_obj.phone_number:
                 store_obj.phone_number = store["phone"]
 
             # 住所
-            if (store["address_site"] and not store_obj.address) or (store["address_site"] and media_type == "gn") or (store["address_site"] and media_type == "tb"):
+            if (store["address_site"] and not store_obj.address) or (store["address_site"] and mt_str == "gn") or (store["address_site"] and mt_str == "tb"):
                 store_obj.address = store["address_site"]
 
             # カテゴリ登録
@@ -443,14 +444,14 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
         md_objs = models.Media_data.objects.select_related("store", "media_type").filter(store__in=st_obj_list)
         # media_data登録ーーーーーーーーーーーーーー
         bulk_create_media_list = []
-        exist_objs = md_objs.filter(media_type=media_type_obj)
-        # exist_objs = md_objs.filter(media_type=media_type_obj).only('store')
+        exist_objs = md_objs.filter(media_type=mt_obj)
+        # exist_objs = md_objs.filter(media_type=mt_obj).only('store')
         exist_list = [md.store for md in exist_objs]
         bulk_st_obj_list = [st for st in st_obj_list if st not in exist_list]
         for st_obj in bulk_st_obj_list:
             md_obj = models.Media_data(
                 store=st_obj,
-                media_type=media_type_obj
+                media_type=mt_obj
             )
             bulk_create_media_list.append(md_obj)
         models.Media_data.objects.bulk_create(bulk_create_media_list)
@@ -461,11 +462,14 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
 
             media_obj: models.Media_data
             if flg == "update":
-                media_obj = [s for s in md_objs if s.store.store_name == store["store_name_db"] and s.media_type.media_type == media_type][0]
+                if mt_str == "tb" and (store["yomigana"] or store["yomi_roma"]):  # 読み仮名をもっている自信のある食べログなら正式名称にしている
+                    media_obj = [md for md in md_objs if md.store.store_name == store["store_name_site"] and md.media_type == mt_obj][0]
+                else:
+                    media_obj = [md for md in md_objs if md.store.store_name == store["store_name_db"] and md.media_type == mt_obj][0]
+
             elif flg == "regist":
-                media_obj = [s for s in md_objs if s.store.store_name == store["store_name_site"] and s.media_type.media_type == media_type][0]
+                media_obj = [md for md in md_objs if md.store.store_name == store["store_name_site"] and md.media_type == mt_obj][0]
             else:
-                media_obj = None
                 # media_obj = models.Store.objects.none()
                 print('エラー')
                 raise Exception()
@@ -501,10 +505,10 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                 rev_objs = models.Review.objects.filter(media=media_obj).only("pk")
                 bulk_delete_list += [r.pk for r in rev_objs]
 
-            already_list = []
+            already_rev_list = []
             for review in store["review"]:
                 try:
-                    if review["content"] in already_list:
+                    if review["content"] in already_rev_list:
                         continue
 
                     new_rev_obj = models.Review(
@@ -517,7 +521,7 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
                     )
                     bulk_review_list.append(new_rev_obj)
 
-                    already_list.append(review["content"])
+                    already_rev_list.append(review["content"])
 
                 except Exception as e:
                     print(type(e), e)
@@ -551,28 +555,67 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             st.total_review_count = total_review_count
             st.save()
 
+    from scrape import scrape_kit
+    area1 = area_obj.area_name.split(" ")[0]
+    area2 = area_obj.area_name.split(" ")[1]
     if update_list:
-        update_or_regist(update_list, flg="update")
+        try:
+            update_or_regist(update_list, flg="update")
+        except Exception as e:
+            print(type(e), e)
+            scrape_kit.generate_json(update_list, mt_str, area1, area2, update_or_regist="update")
     if regist_list:
-        update_or_regist(regist_list, flg="regist")
+        try:
+            update_or_regist(regist_list, flg="regist")
+        except Exception as e:
+            print(type(e), e)
+            scrape_kit.generate_json(regist_list, mt_str, area1, area2, update_or_regist="regist")
+
+    # 同じ検索結果名からDB内のかぶってる店舗あぶりだす。ほぼgoogle用
+    name_site_list = [s["store_name_site"] for s in update_list]
+    name_db_list = [s["store_name_db"] for s in update_list]
+    if updated_name_list:  # 既に同一nameでupdateしたものも追加
+        name_site_list += updated_name_list
+        name_db_list += updated_name_list
+    import collections
+    counter = collections.Counter(name_site_list)
+    dupli_site_name = [s for s in counter if counter[s] >= 2]  # 出現回数2以上
+
+    if dupli_site_name:
+        dupli_dict = dict(zip(name_db_list, name_site_list))
+        dupli_names = []
+        for name in dupli_site_name:  # 同じvalue同士の順番でリストに入れたいため
+            dupli_names += [k for k, v in dupli_dict.items() if v == name]
+            dupli_names += "\n"
+        if dupli_names:
+            duplicated_by_google_memo(dupli_names, area1, area2)
+    # ーーーーーーーーーーーーーーーーーーーーーーーーーーー
 
     # その名前で検索しても出てこない店を調査。口コミがないなら(又は最終口コミがけっこう前)、既に閉店していると判断。店の削除とIGNORENAMEリストに書き込み。
+    closed_list = []
     if kill_list:
-        limit_months = 24
+        limit_months = 36
 
         for name in kill_list:
             store_obj = models.Store.objects.get(store_name=name, area=area_obj)
             reviews = models.Review.objects.filter(media__store=store_obj)
 
             rescue_flg = False
-            for rev in reviews:
-                if rev.review_date > datetime.datetime.now().date() - relativedelta(months=limit_months):
-                    rescue_flg = True
-                    break
+            if reviews:
+                for rev in reviews:
+                    if rev.review_date > datetime.datetime.now().date() - relativedelta(months=limit_months):
+                        rescue_flg = True
+                        break
 
             if rescue_flg is False:
-                store_obj.delete()
-                delete_list.append(name)
+                closed_list.append(name)
+            else:
+                doubt_list.append(f'生還    : {name}')
+        if closed_list:
+            delete_objs = models.Store.objects.filter(store_name__in=closed_list, area=area_obj)
+            delete_objs.delete()
+            print(f'delete may be closed store: {closed_list}')
+    # ーーーーーーーーーーーーーーーーーーーーーーーーーー
 
     if errorlist:
         print('write エラーログ')
@@ -581,4 +624,4 @@ def atode_process(atode_list: list, media_type: str, media_type_obj: models.Medi
             for d in errorlist:
                 f.write(f"{d}\n")
 
-    return _created_list, not_adopted_list, doubt_list, delete_list
+    return _created_list, not_adopted_list, doubt_list, closed_list

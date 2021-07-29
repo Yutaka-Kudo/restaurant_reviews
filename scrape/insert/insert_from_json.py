@@ -37,7 +37,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         jfile = json.load(f)
     # jlen = len(jfile)
     # jfile = jfile[round(jlen / 2):]
-    # jfile = jfile[200:]
+    # jfile = jfile[85:89]
 
     # エリア別ignore_list
     try:  # あったら読み込む
@@ -52,7 +52,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
     try:
         print(area1 + " " + area2)
 
-        media_type_obj = models.Media_type.objects.get(media_type=media_type)
+        media_type_obj:models.Media_type = models.Media_type.objects.get(media_type=media_type)
 
         # area登録ーーーーーーーーーーーーー
         kakasi = pykakasi.kakasi()
@@ -71,6 +71,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         # 県・市
         area_name = area1 + " " + area2
 
+        area_obj:models.Area
         area_hira = "".join([s["hira"] for s in kakasi.convert(area_name)])
         area_roma = "".join([s["hepburn"] for s in kakasi.convert(area_hira)])
         area_obj, _created = models.Area.objects.update_or_create(
@@ -82,8 +83,8 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             }
         )
         # 初めてフラグ
-        # first_time = True if _created else False
-        first_time = True if media_type == "tb" else False
+        first_time = True if _created else False
+        # first_time = True if media_type == "tb" else False
         # ーーーーーーーーーーーーーーーー
 
         def create_ignoreList():
@@ -96,36 +97,38 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 "居酒屋",
                 area2_for_ignore,
                 # 料理
-                "焼鳥",
-                "焼き鳥",
-                "焼とり",
-                "焼きとり",
-                "やきとり",
-                "蕎麦",
-                "そば",
-                "ラーメン",
-                "らーめん",
-                "拉麺",
-                "中華",
-                "カレー",
-                "串カツ",
-                "串かつ",
-                "焼肉",
-                "焼き肉",
-                "やき肉",
-                "やきにく",
+                # "焼鳥",
+                # "焼き鳥",
+                # "焼とり",
+                # "焼きとり",
+                # "やきとり",
+                "焼",
+                "焼き",
+                # "蕎麦",
+                # "そば",
+                # "ラーメン",
+                # "らーめん",
+                # "拉麺",
+                # "中華",
+                # "カレー",
+                # "串カツ",
+                # "串かつ",
+                # "焼肉",
+                # "焼き肉",
+                # "やき肉",
+                # "やきにく",
                 "唐揚",
                 "唐揚げ",
                 "から揚げ",
                 "からあげ",
-                "寿司",
-                "鮨",
-                "寿し",
-                "すし",
-                "しゃぶしゃぶ",
-                "串焼",
-                "串焼き",
-                "とんかつ",
+                # "寿司",
+                # "鮨",
+                # "寿し",
+                # "すし",
+                # "しゃぶしゃぶ",
+                # "串焼",
+                # "串焼き",
+                # "とんかつ",
                 "",
                 "",
                 "",
@@ -133,10 +136,10 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 "",
                 "",
                 # 業態、特徴
-                "レストラン",
-                "ダイニング",
-                "カフェ",
-                "バー",
+                # "レストラン",
+                # "ダイニング",
+                # "カフェ",
+                # "バー", # 「bar 豊」と「豊鮨」で重複しちゃう
                 "炭火",
                 "立ち飲み",
                 "立ち呑み",
@@ -174,11 +177,11 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         created_list = []
         chain_list = []
         jfile_length = len(jfile)
-        bulk_md_list = []
+        # bulk_md_list = []
         bulk_delete_list = []
         bulk_review_list = []
+        updated_name_list = []
         
-
         for store_data in jfile:
             print(f'\nあと {jfile_length}')
             atode_dict = {}
@@ -288,15 +291,20 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 review_count = 0
 
             if not atode_flg:
-                # media_obj:models.Media_data
-                # media_obj,_ = models.Media_data.objects.update_or_create(store=store_obj, media_type=media_type_obj)
-                # media_obj.collected = collected
-                # media_obj.url = url
-                # media_obj.rate = rate
-                # media_obj.review_count = review_count
-                # bulk_md_list.append(media_obj)
 
-                media_obj, _ = models.Media_data.objects.update_or_create(
+                if origin_name:
+                    updated_name_list.append(origin_name)
+
+                md_obj:models.Media_data
+                md_obj.store = store_obj
+                md_obj.media_type = media_type_obj
+                md_obj.collected = collected
+                md_obj.url = url
+                md_obj.rate = rate
+                md_obj.review_count = review_count
+                bulk_md_list.append(md_obj)
+
+                md_obj, _ = models.Media_data.objects.update_or_create(
                     store=store_obj, media_type=media_type_obj,
                     defaults={
                         "collected": collected,
@@ -330,7 +338,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
             # 口コミーーーーーーーーーー
             if atode_flg is False:
                 # データ消して刷新
-                rev_objs = models.Review.objects.filter(media=media_obj).only("pk")
+                rev_objs = models.Review.objects.filter(media=md_obj).only("pk")
                 bulk_delete_list += [r.pk for r in rev_objs]
                 print('ReviewObj delete for renewal')
 
@@ -370,7 +378,7 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                         new_rev_obj = models.Review(
                             title=title,
                             content=content,
-                            media=media_obj,
+                            media=md_obj,
                             review_date=date,
                             review_point=review_point,
                             log_num_byTabelog=log_num
@@ -421,9 +429,8 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
         # "review":[{"title":a,"content":a,"date":a,"log_num":a},{....},{.....}]},
         #  {"name":a, ..........}]
         if atode_list:
-            # subprocess.run(["say", "選びなさい"])
             subprocess.run(['noti', "-t", "next.あとでプロセス", "-m", f"{filename}"])
-            _created_list, not_adopted_list, doubt_list, delete_list = atode_process(atode_list, media_type, media_type_obj, area_obj)
+            _created_list, not_adopted_list, doubt_list, closed_list = atode_process(atode_list, media_type_obj, area_obj, updated_name_list)
 
             created_list += _created_list
 
@@ -437,12 +444,12 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                 # n = datetime.datetime.now() + datetime.timedelta(hours=9)
                 n = datetime.datetime.now()
                 with open(f"/Users/yutakakudo/Google ドライブ/colab/json/doubt_{media_type}_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
-                    for i, line in enumerate(doubt_list):
+                    for line in doubt_list:
                         f.write(f"{line}\n")
-                        if i % 2 == 1:
+                        if "DBの名前" in line or "生還" in line:
                             f.write("\n")
                 print('doubt_list作成！')
-            if delete_list:
+            if closed_list:
                 # 既存のファイルの末尾が改行になってるか
                 try:
                     with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/IGNORENAME_{area1}_{area2}.txt", "r") as f:
@@ -451,11 +458,11 @@ def insert_from_json(file, area1: str, area2: str, media_type: str):
                     reads = "\n"
                 with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/IGNORENAME_{area1}_{area2}.txt", "a") as f:
                     if reads == "\n":
-                        f.write("\n".join(delete_list))
+                        f.write("\n".join(closed_list))
                     else:
                         f.write("\n")
-                        f.write("\n".join(delete_list))
-                print('delete_list作成')
+                        f.write("\n".join(closed_list))
+                print('closed_list作成')
 
         # エリア別登録数、登録------------
         area_obj.registed = len(models.Store.objects.filter(area=area_obj))

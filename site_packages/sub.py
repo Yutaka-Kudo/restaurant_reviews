@@ -73,7 +73,7 @@ IGNORE_STORE_NAME = [
     "津田沼PARCO",
     "まんが＆インターネットカフェ アルファ24 京成大久保店",
     "ペリエ津田沼",
-    "",
+    "おけがわマイン",
     "",
     "",
     "",
@@ -85,12 +85,14 @@ IGNORE_STORE_NAME = [
 OTHER_THAN_RESTAURANTS = [
     # 漫喫ーーーーーーーーーー
     ".*快活CLUB",
+    ".*快活クラブ",
     "メディアカフェポパイ",
     "ゲラゲラ",
     # カラオケーーーーーーーーーー
+    ".*歌うんだ村",
+    ".*JOYSOUND",
     ".*ビッグエコー",
     ".*BIGECHO",
-    ".*JOYSOUND",
     ".*カラオケ コート・ダジュール",
     # "カラオケパセラ",
     ".*カラオケCLUB DAM",
@@ -101,6 +103,7 @@ OTHER_THAN_RESTAURANTS = [
     ".*カラオケまねきねこ",
     ".*カラオケマック",
     ".*カラオケ・バンバン",
+    ".*カラオケBanBan",
     ".*カラオケスタジオ",
     ".*カラオケステージ",
     ".*カラオケステーション",
@@ -108,20 +111,21 @@ OTHER_THAN_RESTAURANTS = [
     ".*カラオケファンタジー",
     ".*カラオケラウンジ",
     ".*カラオケルーム",
-    # コンビニーーーーーーーーーー
-    "ファミリーマート",
-    "ミスタードーナツ",
-    "ニューヤマザキデイリーストア",
-    "デイリーヤマザキ",
-    "ローソン",
-    "ミニストップ",
-    "セブンイレブン",
     # 不動産ーーーーーーーーーーー
     ".*タウンハウジング",
     ".*株式会社エイブル",
     "ユウキホーム",
     ".*ピタットハウス",
     ".*ハウスコム",
+    # コンビニーーーーーーーーーー
+    "ファミリーマート",
+    "ミスタードーナツ",
+    "ニューヤマザキデイリーストア",
+    "デイリーヤマザキ",
+    "ローソン",
+    "ナチュナルローソン",
+    "ミニストップ",
+    "セブンイレブン",
     # デパートーーーーーーーーーー
     "そごう",
     "イトーヨーカドー",
@@ -137,21 +141,27 @@ OTHER_THAN_RESTAURANTS = [
     "シャポー",
     "ラフォーレ",
     "東急プラザ",
+    "三井アウトレットパーク",
     # スーパーーーーーーーーーーー
     "イオン",
     "イオンモール",
-    "マックスバリュ",
-    "ワイズマート",
-    "マルエツ",
-    "マミーマート",
+    "カスミ",
+    "カインズ",
+    "キャンドゥ",
+    ".*業務スーパー",
     # "IKEA", # IKEA スウェーデンカフェ とかもある
     "ダイエー",
-    ".*テンポス",
-    "ヤマダデンキ",
-    "無印良品",
-    "DAISO",
     "ダイソー",
-    ".*業務スーパー",
+    "DAISO",
+    ".*テンポス",
+    "ベルク",
+    "マックスバリュ",
+    "マルエツ",
+    "マミーマート",
+    "無印良品",
+    "ヤマダデンキ",
+    "ヨークマート",
+    "ワイズマート",
     # ホテルーーーーーーーーーー
     "アパホテル",
     "ホテルリブマックス",
@@ -159,6 +169,7 @@ OTHER_THAN_RESTAURANTS = [
     "アパマンショップ",
     "TOHOシネマズ",
     "スーパーホテル",
+    "ロイヤルパインズホテル",
     # その他ーーーーーーーーーー
     ".*ティップネス",
     ".*ふなっこ畑",
@@ -289,7 +300,7 @@ def chain_replace(store_name: str) -> str:
         },
         "さくら水産": {
             "short": "さくら水産",
-            "long": "産物居酒屋 さくら水産"
+            "long": "海産物居酒屋 さくら水産"
         },
         "楽蔵": {
             "short": "楽蔵",
@@ -327,6 +338,22 @@ def chain_replace(store_name: str) -> str:
             "short": "いきなりステーキ",
             "long": "いきなり！ステーキ"
         },
+        "コメダ珈琲店": {
+            "short": "コメダ珈琲店",
+            "long": "珈琲所 コメダ珈琲店"
+        },
+        "温野菜": {
+            "short": "温野菜",
+            "long": "しゃぶしゃぶ温野菜"
+        },
+        # "": {
+        #     "short": "",
+        #     "long": ""
+        # },
+        # "": {
+        #     "short": "",
+        #     "long": ""
+        # },
         # "": {
         #     "short": "",
         #     "long": ""
@@ -371,28 +398,28 @@ def name_set(store_obj: models.Store, store_name: str, media_type: str, yomigana
 
     store_obj.update_name(store_name, media_type)
 
-    if media_type == "tb" and (yomigana or yomi_roma):  # 食べログの名前を正式名称にする
+    if media_type == "tb" and (yomigana or yomi_roma):  # 読み仮名をもっている自信のある食べログなら正式名称にする
         store_obj.update_name(store_name)
 
+    # よみがなーーーーーーーーーーー
     if (yomigana and media_type == "tb") or (yomigana and media_type == "gn" and not store_obj.yomigana):
         store_obj.yomigana = yomigana
         store_obj.save()
-    # elif not store_obj.yomigana:
-    #     kakasi = pykakasi.kakasi()
-    #     name_hira = kakasi.convert(store_name.strip().replace(' ', ''))
-    #     name_hira = "".join([s["hira"] for s in name_hira])
-    #     store_obj.yomigana = name_hira
-    #     store_obj.save()
+    elif (media_type == "google" and not store_obj.yomigana):
+        kakasi = pykakasi.kakasi()
+        conv = kakasi.convert(store_obj.store_name)
+        store_obj.yomigana = "".join([s["hira"] for s in conv]).strip().replace(' ', '')[:99]
+        store_obj.save()
 
+    # よみローマーーーーーーーーーーーー
     if (yomi_roma and media_type == "tb") or (yomi_roma and media_type == "gn" and not store_obj.yomi_roma):
         store_obj.yomi_roma = yomi_roma
         store_obj.save()
-    # elif not store_obj.yomi_roma:
-    #     kakasi = pykakasi.kakasi()
-    #     name_roma = kakasi.convert(store_name.strip().replace(' ', ''))
-    #     name_roma = "".join([s["hepburn"] for s in name_roma])
-    #     store_obj.yomi_roma = name_roma
-    #     store_obj.save()
+    elif (media_type == "google" and not store_obj.yomi_roma):
+        kakasi = pykakasi.kakasi()
+        conv = kakasi.convert(store_obj.store_name)
+        store_obj.yomi_roma = "".join([s["hepburn"] for s in conv]).strip().replace(' ', '')[:99]
+        store_obj.save()
 
 
 def address_set(store_obj, address, media_type):

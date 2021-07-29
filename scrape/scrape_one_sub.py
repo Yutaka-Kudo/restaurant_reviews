@@ -38,9 +38,9 @@ def scrape_one(driver, media, area1, area2, origin_name):
         try:
             alias_name: str = driver.find_element_by_class_name('alias').text.replace("）", "").replace("（", "").replace(" ", "").replace("　", "")
             if alias_name.isascii() and alias_name != "":
-                yomi_roma = alias_name
                 yomigana = ""
-            else:
+                yomi_roma = alias_name
+            elif "【" not in alias_name: # 「【旧店名】味都」こんな感じのは除外
                 yomigana = alias_name
                 yomi_roma = ""
         except Exception:

@@ -1,13 +1,10 @@
 
-# media_dataのないstoreを掃除ーーーーーーーーー
-# area_obj = models.Area.objects.get(area_name="千葉県 市川市")
-
-
 from scrape import models
-from site_packages.sub import name_set, address_set, setTotalRateForStore
-
+from site_packages import sub
 from decimal import Decimal
 import datetime
+
+# media_dataのないstoreを掃除ーーーーーーーーー
 
 
 def clean_store_obj(area_obj):
@@ -43,8 +40,6 @@ def clean_store_obj(area_obj):
 
 # 重複を統合ーーーーーーーーーー
 def conflict_integration(childname, childmedia, parentname, area=""):
-    from scrape import models
-
     if not area:
         child_obj = models.Store.objects.get(store_name=childname)
     else:
@@ -64,16 +59,17 @@ def conflict_integration(childname, childmedia, parentname, area=""):
     print(parent_obj)
 
     # 名前ーーーーーーーーーー
-    name_set(parent_obj, getattr(child_obj, f"store_name_{childmedia}"), childmedia, getattr(child_obj, "yomigana"), getattr(child_obj, "yomi_roma"))
-    # # parent_obj.update_name(target_store_name_by_media, childmedia)  # 各メディア用名前
-    # parent_obj.update_name(getattr(child_obj, f"store_name_{childmedia}"), childmedia)  # 各メディア用名前
-    # # ぐるなび読み仮名が入ってたら問答無用で入れ替え
-    # if (childmedia == "gn" and getattr(child_obj, "yomigana")) or (not getattr(parent_obj, "yomigana") and getattr(child_obj, "yomigana")):
-    #     parent_obj.yomigana = child_obj.yomigana
-    #     parent_obj.save()
-    # if (childmedia == "gn" and getattr(child_obj, "yomi_roma")) or (not getattr(parent_obj, "yomi_roma") and getattr(child_obj, "yomi_roma")):
-    #     parent_obj.yomi_roma = child_obj.yomi_roma
-    #     parent_obj.save()
+    # ？？？？？？？？？？？？？？？？？？？？？？
+    # sub.name_set(parent_obj, getattr(child_obj, f"store_name_{childmedia}"), childmedia, getattr(child_obj, "yomigana"), getattr(child_obj, "yomi_roma"),manual=True)
+
+    parent_obj.update_name(getattr(child_obj, f"store_name_{childmedia}"), childmedia)  # 各メディア用名前
+    # 親のを保持。なかったら入れる
+    if (not parent_obj.yomigana and child_obj.yomigana):
+        parent_obj.yomigana = child_obj.yomigana
+        parent_obj.save()
+    if (not parent_obj.yomi_roma and child_obj.yomi_roma):
+        parent_obj.yomi_roma = child_obj.yomi_roma
+        parent_obj.save()
 
     # カテゴリーーーーーーーーー
     if not getattr(parent_obj, "category1") and getattr(child_obj, "category1"):
@@ -92,7 +88,7 @@ def conflict_integration(childname, childmedia, parentname, area=""):
         parent_obj.save()
 
     # 住所ーーーーーーーーーー
-    address_set(parent_obj, getattr(child_obj, "address"), childmedia)
+    sub.address_set(parent_obj, getattr(child_obj, "address"), childmedia)
     # # ぐるなびか食べログのを入れる。googleの住所はできれば替えたい
     # if (childmedia == "gn" and getattr(child_obj, "address")) or (childmedia == "tb" and getattr(child_obj, "address")) or (not getattr(parent_obj, "address") and getattr(child_obj, "address")):
     #     parent_obj.address = child_obj.address
@@ -175,9 +171,12 @@ def conflict_integration(childname, childmedia, parentname, area=""):
     return child_obj, childmedia, childname, parent_obj, child_m_data_obj
 
 
-area = "埼玉県 上尾市"
+area = "埼玉県 越谷市"
+area = "埼玉県 熊谷市"
+area = "埼玉県 大宮"
+area = "埼玉県 浦和"
 area = "千葉県 柏市"
-area = "千葉県 千葉市"
+area = "千葉県 習志野市"
 area = "千葉県 市川市"
 area = "千葉県 船橋市"
 area = "千葉県 木更津市"
@@ -186,16 +185,17 @@ area = "東京都 青山"
 area = "大阪府 梅田"
 area = "大阪府 天王寺"
 child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="築地銀だこ", childmedia="google", parentname="", area=area)
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="寿司 一品料理 君寿司", childmedia="gn", parentname="君寿司", area=area)
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="ニムタ 南浦和店", childmedia="tb", parentname="ニムタ 南浦和1号店", area=area)
 child_obj.delete()
 
 
-st = models.Store.objects.get(store_name="Mare@ 柏本店")
-st.yomigana = None
-st.yomi_roma = None
-st.store_name_gn = None
+st = models.Store.objects.get(store_name="Egg Egg キッチン レイクタウン店")
+st.yomigana = "ことぶきやほんてん"
+st.yomi_roma = "kotobukiyahonten"
 st.save()
 me = models.Media_data.objects.filter(store=st)[0]
+me.__dict__
+me.delete()
 
 if input('media_dataとstore_name_by_media消す？y/n: ') == "y":
     child_m_data_obj.delete()
@@ -206,16 +206,19 @@ if input('store消す？y/n: ') == "y":
     child_obj.delete()
     # 食べログの場合。子を消してから本名乗っ取る
     if childmedia == "tb":
-        print("確認：", parent_obj.yomigana, parent_obj.yomi_roma)
+        print(f"確認：\n{parent_obj.store_name}\n{parent_obj.yomigana}\n{parent_obj.yomi_roma}")
         parent_obj.update_name(childname)
+
+        parent_obj.yomi_roma = childname
+        parent_obj.save()
 
 # 消すーーーーーーーーーー
 ta = models.Store.objects.get(store_name="レストラン", area__area_name__icontains="六本木")
 ta = models.Store.objects.get(store_name="旬菜")
 ta.delete()
-models.Store.objects.get(store_name="おすすめ 笑味屋", area__area_name=area).delete()
+models.Store.objects.get(store_name="蘭茶", area__area_name=area).delete()
 # models.Store.objects.filter(store_name__startswith="ほっともっと").delete()
-models.Store.objects.filter(area__area_name="千葉県 木更津市").delete()
+# models.Store.objects.filter(area__area_name="埼玉県 越谷市").delete()
 
 # googleのmedia_data消す
 ga = models.Media_data.objects.filter(store__area__area_name="千葉県 船橋市", media_type__media_type="hp")
@@ -299,7 +302,6 @@ def show_madiadata_count():
 
 
 # 店ごとのtotal_rate登録ーーーーー----------------
-from decimal import Decimal
 store_objs = models.Store.objects.all()
 # store_objs = models.Store.objects.filter(area__area_name="千葉県 船橋市")
 le = store_objs.count()
@@ -308,7 +310,7 @@ for st in store_objs:
     # all_md = models.Media_data.objects.filter(store=st, media_type__media_type__in=["gn", "google", "tb", "uber"])
     all_md = models.Media_data.objects.filter(store=st)
 
-    total_rate = setTotalRateForStore(all_md)
+    total_rate = sub.setTotalRateForStore(all_md)
 
     st.total_rate = total_rate
     st.save()

@@ -63,19 +63,19 @@ driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=option
 
 
 
-area1 = "千葉県"
-area2s = [
-    "船橋市",
-    # "市川市",
-    # "千葉市",
-    # "習志野市",
-    # "松戸市",
-    # "銚子市",
-    # "館山市",
-    # "",
-    # "",
-    # "",
-]
+# area1 = "千葉県"
+# area2s = [
+#     # "船橋市",
+#     # "市川市",
+#     # "千葉市",
+#     "習志野市",
+#     # "松戸市",
+#     # "銚子市",
+#     # "館山市",
+#     # "",
+#     # "",
+#     # "",
+# ]
 
 # area1 = "東京都"
 # area2s = [
@@ -132,16 +132,16 @@ area2s = [
 #     # "調布",
 # ]
 
-# area1 = "埼玉県"
-# area2s = [
-#     # "さいたま市",
-#     # "上尾市",
-#     # "桶川市",
-#     "大宮",
-#     # "浦和",
-#     # "越谷市",
-#     # "",
-# ]
+area1 = "埼玉県"
+area2s = [
+    # "さいたま市",
+    # "上尾市",
+    # "桶川市",
+    # "大宮",
+    # "浦和",
+    # "越谷市",
+    "熊谷市",
+]
 
 # area1 = "大阪府"
 # area2s = [
@@ -181,7 +181,7 @@ area2 = area2s[0]
 # 食べログーーーーーーーーー
 driver.get('https://tabelog.com/')
 # origin_name = "Piacere"
-scrape_one_sub.scrape_one(driver,"tb", area1, area2, "レストランヤマグチ")
+scrape_one_sub.scrape_one(driver,"tb", area1, area2, "中華レストラン 蘭茶")
 
 
 handle_array = driver.window_handles
@@ -192,7 +192,7 @@ driver.get('https://google.com/?hl=ja')
 area_input = driver.find_element_by_css_selector('body > div > div:nth-child(3) > form > div > div > div > div > div:nth-child(2) > input')
 area_input.send_keys(f'{area1+area2} 飲食店' + Keys.ENTER)
 driver.find_element_by_link_text('すべて表示').click()
-scrape_one_sub.scrape_one(driver,"google", area1, area2, "7丁目イタリア食堂 Makita （マキタ）")
+scrape_one_sub.scrape_one(driver,"google", area1, area2, "アンジェ 桶川坂田東店")
 
 
 import importlib
