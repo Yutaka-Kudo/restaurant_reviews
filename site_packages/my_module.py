@@ -460,49 +460,54 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
         for i, store in enumerate(datalist):
             print(f'md処理 あと {length-i}')
 
-            media_obj: models.Media_data
-            if flg == "update":
-                if mt_str == "tb" and (store["yomigana"] or store["yomi_roma"]):  # 読み仮名をもっている自信のある食べログなら正式名称にしている
-                    media_obj = [md for md in md_objs if md.store.store_name == store["store_name_site"] and md.media_type == mt_obj][0]
-                else:
-                    media_obj = [md for md in md_objs if md.store.store_name == store["store_name_db"] and md.media_type == mt_obj][0]
+            md_obj: models.Media_data
+            searched_mds = [md for md in md_objs if getattr(md.store,f"store_name_{mt_str}") == store["store_name_site"] and md.media_type == mt_obj]
+            
+            if len(searched_mds) >= 2: # エラーパターン 重複店名
+                print(f'エラーリスト追加 同store_name_{mt_str} {store["store_name_site"]}')
+                errorlist.append((f'エラー 同store_name_{mt_str} {store["store_name_site"]}',[md.store.store_name for md in searched_mds]))
 
-            elif flg == "regist":
-                media_obj = [md for md in md_objs if md.store.store_name == store["store_name_site"] and md.media_type == mt_obj][0]
-            else:
-                # media_obj = models.Store.objects.none()
-                print('エラー')
-                raise Exception()
+            md_obj = searched_mds[0]
+
+            # ??????????????????????????
+            # if flg == "update":
+            #     md_obj = [md for md in md_objs if getattr(md.store,f"store_name_{mt_str}") == store["store_name_db"] and md.media_type == mt_obj][0]
+            # elif flg == "regist":
+            #     md_obj = [md for md in md_objs if md.store.store_name == store["store_name_site"] and md.media_type == mt_obj][0]
+            # else:
+            #     # md_obj = models.Store.objects.none()
+            #     print('エラー')
+            #     raise Exception()
 
             if store["collected"]:
                 try:
-                    media_obj.collected = store["collected"]
-                    media_obj.save()
+                    md_obj.collected = store["collected"]
+                    md_obj.save()
                 except Exception as e:
                     errorlist.append((type(e), e, store["collected"]))
 
             try:
-                media_obj.rate = store["rate"]
-                media_obj.save()
+                md_obj.rate = store["rate"]
+                md_obj.save()
             except Exception as e:
                 errorlist.append((type(e), e, store["rate"]))
 
             try:
-                media_obj.url = store["url"]
-                media_obj.save()
+                md_obj.url = store["url"]
+                md_obj.save()
             except KeyError as e:
                 errorlist.append((type(e), e, store["url"]))
 
             try:
-                media_obj.review_count = store["review_count"]
-                media_obj.save()
+                md_obj.review_count = store["review_count"]
+                md_obj.save()
             except KeyError as e:
                 errorlist.append((type(e), e, store["review_count"]))
 
             # review登録ーーーーーーーー
             if flg == "update":
                 # データ消して刷新
-                rev_objs = models.Review.objects.filter(media=media_obj).only("pk")
+                rev_objs = models.Review.objects.filter(media=md_obj).only("pk")
                 bulk_delete_list += [r.pk for r in rev_objs]
 
             already_rev_list = []
@@ -514,7 +519,7 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
                     new_rev_obj = models.Review(
                         title=review["title"],
                         content=review["content"],
-                        media=media_obj,
+                        media=md_obj,
                         review_date=review["date"],
                         review_point=review["review_point"],
                         log_num_byTabelog=review["log_num"]
@@ -538,10 +543,9 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
         # 店ごとのtotal_rate登録ーーーーー
         st_obj_len = len(st_obj_list)
         for i, st in enumerate(st_obj_list):
+            print(f'(atode)total_rate登録 あと {st_obj_len-i} 店')
             st: models.Store
-            print(f'total_rate登録 あと {st_obj_len-i} 店')
             store_md = models.Media_data.objects.filter(store=st)
-
             total_rate = setTotalRateForStore(store_md)
             st.total_rate = total_rate
             st.save()
