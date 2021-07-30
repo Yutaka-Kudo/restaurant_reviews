@@ -172,7 +172,7 @@ def conflict_integration(childname, childmedia, parentname, area=""):
 
 
 area = "埼玉県 越谷市"
-area = "埼玉県 熊谷市"
+area = "埼玉県 上尾市"
 area = "埼玉県 大宮"
 area = "埼玉県 浦和"
 area = "千葉県 柏市"
@@ -185,17 +185,15 @@ area = "東京都 青山"
 area = "大阪府 梅田"
 area = "大阪府 天王寺"
 child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="築地銀だこ", childmedia="google", parentname="", area=area)
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="ニムタ 南浦和店", childmedia="tb", parentname="ニムタ 南浦和1号店", area=area)
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="国産牛焼肉食べ放題！ どんどん 上尾店", childmedia="gn", parentname="感激 どんどん 上尾店", area=area)
 child_obj.delete()
 
 
-st = models.Store.objects.get(store_name="Egg Egg キッチン レイクタウン店")
+st = models.Store.objects.get(store_name="ばか息子")
 st.yomigana = "ことぶきやほんてん"
 st.yomi_roma = "kotobukiyahonten"
 st.save()
 me = models.Media_data.objects.filter(store=st)[0]
-me.__dict__
-me.delete()
 
 if input('media_dataとstore_name_by_media消す？y/n: ') == "y":
     child_m_data_obj.delete()
@@ -216,7 +214,7 @@ if input('store消す？y/n: ') == "y":
 ta = models.Store.objects.get(store_name="レストラン", area__area_name__icontains="六本木")
 ta = models.Store.objects.get(store_name="旬菜")
 ta.delete()
-models.Store.objects.get(store_name="蘭茶", area__area_name=area).delete()
+models.Store.objects.get(store_name="キリン", area__area_name=area).delete()
 # models.Store.objects.filter(store_name__startswith="ほっともっと").delete()
 # models.Store.objects.filter(area__area_name="埼玉県 越谷市").delete()
 

@@ -371,11 +371,13 @@ def scrape_google_refill():
                     except Exception:
                         print('新規順クリックerror!!!!!!!!!')
 
-                atode_dict["review"] = atode_review_list
 
                 # driver.find_element_by_xpath(f'/html/body/span[{store_num}]/g-lightbox/div[2]/div[2]').click() # 閉じるボタン
                 actions = webdriver.ActionChains(driver)
                 actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
+
+                
+            atode_dict["review"] = atode_review_list
 
             atode_list.append(atode_dict)
 

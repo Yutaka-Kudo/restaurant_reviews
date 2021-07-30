@@ -183,7 +183,7 @@ OTHER_THAN_RESTAURANTS = [
 # .*が付いてないものは商業施設。頭に何も付かないもの限定。つまり施設そのもの。
 
 
-def chain_replace(store_name: str) -> str:
+def chain_replace(store_name: str) -> list:
 
     chain_dict = {
         "新宿さぼてん": {
@@ -360,23 +360,48 @@ def chain_replace(store_name: str) -> str:
         # },
     }
 
+    import re
+        # いきなりステーキ 松戸店
+    chain_dict = {"いきなり": [
+        "いきなり",
+        "いきなり  ステーキ",
+        "いきなり！ステーキ",
+        "魁いきなりステーキ",
+        ]}
+
+    store_name = "いきなりステー  キ松戸市".replace(' ', '')
+    # re.match("いきなり",store_name).group()
+
     store_name = store_name.replace(' ', '')
     # chain_dict keyを回して該当するかチェック
-    hit = [s for s in chain_dict.keys() if s.replace(' ', '') in store_name]
-    if len(hit) == 1:
-        hit = hit[0]  # リスト解除
-        if chain_dict[hit]["long"].replace(' ', '') in store_name:  # 先に長い名前から当てはめる
-            replaced_name = store_name.replace(chain_dict[hit]["long"].replace(' ', ''), chain_dict[hit]["short"].replace(' ', ''))
-        elif chain_dict[hit]["short"].replace(' ', '') in store_name:
-            replaced_name = store_name.replace(chain_dict[hit]["short"].replace(' ', ''), chain_dict[hit]["long"].replace(' ', ''))
-        else:
-            replaced_name = ""
-        return replaced_name
+    key = [s for s in chain_dict.keys() if s.replace(' ', '') in store_name]
+    if len(key) == 1:
+        key = key[0]  # リスト解除
+        kouho_list:list = chain_dict[key]
+        kouho_list = [name.replace(' ', '') for name in kouho_list]
+        try: 
+            hit_sentence = max([re.match(s,store_name).group() for s in kouho_list if re.match(s,store_name)])
+            kouho_list.remove(hit_sentence) # あるやつは除外してメモリ節約
+
+            
+            return [store_name.replace(hit_sentence,kouho) for kouho in kouho_list]
+
+        except Exception:
+            return []
+
+        # key = key[0]  # リスト解除
+        # if chain_dict[key]["long"].replace(' ', '') in store_name:  # 先に長い名前から当てはめる
+        #     replaced_name = store_name.replace(chain_dict[key]["long"].replace(' ', ''), chain_dict[key]["short"].replace(' ', ''))
+        # elif chain_dict[key]["short"].replace(' ', '') in store_name:
+        #     replaced_name = store_name.replace(chain_dict[key]["short"].replace(' ', ''), chain_dict[key]["long"].replace(' ', ''))
+        # else:
+        #     replaced_name = ""
+        # return replaced_name
     else:
-        return None
+        return []
 
 
-def category_set(store_obj, category_list, errorlist=None):
+def category_set(st_obj, category_list, errorlist=None):
     # カテゴリ登録
     try:
         attrs = [
@@ -385,8 +410,8 @@ def category_set(store_obj, category_list, errorlist=None):
             "category3"
         ]
         for i, category in enumerate(category_list):
-            setattr(store_obj, attrs[i], category)
-        store_obj.save()
+            setattr(st_obj, attrs[i], category)
+        st_obj.save()
 
     except Exception as e:
         print(f'カテゴリ登録failed.. {e}')
@@ -394,38 +419,43 @@ def category_set(store_obj, category_list, errorlist=None):
             errorlist.append((type(e), e, category_list))
 
 
-def name_set(store_obj: models.Store, store_name: str, media_type: str, yomigana: str = "", yomi_roma: str = ""):
+def name_set(st_obj: models.Store, store_name: str, mt_str: str, yomigana: str = "", yomi_roma: str = ""):
+    
+    if getattr(st_obj,f"store_name_{mt_str}") != store_name:
+        st_obj.update_name(store_name, mt_str)
 
-    store_obj.update_name(store_name, media_type)
-
-    if media_type == "tb" and (yomigana or yomi_roma):  # 読み仮名をもっている自信のある食べログなら正式名称にする
-        store_obj.update_name(store_name)
+    if mt_str == "tb" and (yomigana or yomi_roma):  # 読み仮名をもっている自信のある食べログなら正式名称にする
+        if getattr(st_obj,"store_name") != store_name:
+            st_obj.update_name(store_name)
 
     # よみがなーーーーーーーーーーー
-    if (yomigana and media_type == "tb") or (yomigana and media_type == "gn" and not store_obj.yomigana):
-        store_obj.yomigana = yomigana
-        store_obj.save()
-    elif (media_type == "google" and not store_obj.yomigana):
+    if (yomigana and mt_str == "tb") or (yomigana and mt_str == "gn" and not st_obj.yomigana):
+        if getattr(st_obj,"yomigana") != yomigana:
+            st_obj.yomigana = yomigana
+            st_obj.save()
+    elif (mt_str == "google" and not st_obj.yomigana):
         kakasi = pykakasi.kakasi()
-        conv = kakasi.convert(store_obj.store_name)
-        store_obj.yomigana = "".join([s["hira"] for s in conv]).strip().replace(' ', '')[:99]
-        store_obj.save()
+        conv = kakasi.convert(st_obj.store_name)
+        st_obj.yomigana = "".join([s["hira"] for s in conv]).strip().replace(' ', '')[:99]
+        st_obj.save()
 
     # よみローマーーーーーーーーーーーー
-    if (yomi_roma and media_type == "tb") or (yomi_roma and media_type == "gn" and not store_obj.yomi_roma):
-        store_obj.yomi_roma = yomi_roma
-        store_obj.save()
-    elif (media_type == "google" and not store_obj.yomi_roma):
+    if (yomi_roma and mt_str == "tb") or (yomi_roma and mt_str == "gn" and not st_obj.yomi_roma):
+        if getattr(st_obj,"yomi_roma") != yomi_roma:
+            st_obj.yomi_roma = yomi_roma
+            st_obj.save()
+    elif (mt_str == "google" and not st_obj.yomi_roma):
         kakasi = pykakasi.kakasi()
-        conv = kakasi.convert(store_obj.store_name)
-        store_obj.yomi_roma = "".join([s["hepburn"] for s in conv]).strip().replace(' ', '')[:99]
-        store_obj.save()
+        conv = kakasi.convert(st_obj.store_name)
+        st_obj.yomi_roma = "".join([s["hepburn"] for s in conv]).strip().replace(' ', '')[:99]
+        st_obj.save()
 
 
-def address_set(store_obj, address, media_type):
-    if (address and not store_obj.address) or (address and media_type == "gn") or (address and media_type == "tb"):
-        store_obj.address = address
-        store_obj.save()
+def address_set(st_obj, address, mt_str):
+    if (address and not st_obj.address) or (address and mt_str == "gn") or (address and mt_str == "tb"):
+        if getattr(st_obj,"address") != address:
+            st_obj.address = address
+            st_obj.save()
 
 
 def setTotalRateForStore(store_md) -> float:

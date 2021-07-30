@@ -11,7 +11,7 @@ import pykakasi
 
 
 from scrape import models
-from site_packages.my_module import store_model_process, atode_process, setTotalRateForStore
+from site_packages.my_module import store_model_process, atode_process, setTotalRateForStore, make_rev_parts
 from site_packages.sub import IGNORE_STORE_NAME, OTHER_THAN_RESTAURANTS
 
 # st = models.Store.objects.get(store_name="ビアホフ 船橋FACE店")
@@ -37,7 +37,7 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
         jfile = json.load(f)
     # jlen = len(jfile)
     # jfile = jfile[round(jlen / 2):]
-    # jfile = jfile[85:89]
+    # jfile = jfile[200:]
 
     # エリア別ignore_list
     try:  # あったら読み込む
@@ -95,7 +95,7 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
                 "店",
                 "個室",
                 "居酒屋",
-                area2_for_ignore,
+                # area2_for_ignore,
                 # 料理
                 # "焼鳥",
                 # "焼き鳥",
@@ -178,14 +178,12 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
         chain_list = []
         jfile_length = len(jfile)
         # bulk_md_list = []
-        bulk_delete_list = []
-        bulk_review_list = []
         updated_name_list = []
         used_st_list = []
 
-        # store処理ーーーーーーーーーーーーーー 
-        for i, store_data in enumerate(jfile):
-            print(f'\nあと {jfile_length-i}')
+        # store処理ーーーーーーーーーーーーーー
+        for enum, store_data in enumerate(jfile):
+            print(f'\nあと {jfile_length-enum}')
             atode_dict = {}
 
             store_name = store_data["name"]
@@ -193,17 +191,14 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
 
             # 除外ネームならcontinue
             if store_name in IGNORE_STORE_NAME:
-                jfile_length -= 1
                 print('除外ネーム')
                 continue
             # 除外ネームならcontinue by_area
             if store_name in IGNORE_STORE_NAME_BY_AREA:
-                jfile_length -= 1
                 print('除外ネーム')
                 continue
             # 絶対飲食以外のワードならcontinue カラオケ等
             if [s for s in OTHER_THAN_RESTAURANTS if re.match(s.replace(' ', ''), store_name.replace(' ', ''))]:
-                jfile_length -= 1
                 print('飲食以外ネーム')
                 continue
 
@@ -266,7 +261,6 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
 
             if not store_obj:
                 print('店名消しちゃったor変えちゃった')
-                jfile_length -= 1
                 continue
 
             atode_flg = _atode_flg
@@ -275,6 +269,7 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
             chain_list += _chain_list
 
             if atode_flg:
+                # atode処理ーーーーーーーーーーーー
                 # media_data用ーーー
                 try:
                     collected = store_data["collected"]
@@ -301,46 +296,38 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
                 # reviewーーーーーーーーーーーーーーー
                 already_list = []
                 atode_review_list = []
-                for rev in store_data["review"]:
 
-                    if rev["content"] in already_list:
-                        continue
+                # あとで消すーーーーーーー
+                try:
+                    store_data["review"]
+                    rev_ok = True
+                except KeyError:
+                    rev_ok = False
+                if rev_ok:
+                # あとで消すーーーーーーー
 
-                    try:
-                        title = rev["title"][:100]  # 長さ制限
-                    except KeyError:
-                        title = None
-                    try:
-                        content = rev["content"]
-                    except KeyError:
-                        content = None
-                    try:
-                        date = rev["date"]
-                    except KeyError:
-                        date = None
-                    try:
-                        log_num = rev["log_num"]
-                    except KeyError:
-                        log_num = None
-                    try:
-                        review_point = rev["review_point"]
-                    except KeyError:
-                        review_point = None
+                    for rev in store_data["review"]:
 
-                    # {"name":a,"name":a,"phone":a,"url":a,"rate":a,
-                    # "review":[{"content":a,"date":a,"log_num":a},{....},{.....}]}
-                    atode_review_dict = {}
-                    atode_review_dict["title"] = title
-                    atode_review_dict["content"] = content
-                    atode_review_dict["date"] = date
-                    atode_review_dict["log_num"] = log_num
-                    atode_review_dict["review_point"] = review_point
-                    atode_review_list.append(atode_review_dict)
+                        if rev["content"] in already_list:
+                            continue
 
-                    already_list.append(rev["content"])
+                        title, content, date, log_num, review_point = make_rev_parts(rev)
+
+                        # {"name":a,"name":a,"phone":a,"url":a,"rate":a,
+                        # "review":[{"content":a,"date":a,"log_num":a},{....},{.....}]}
+                        atode_review_dict = {}
+                        atode_review_dict["title"] = title
+                        atode_review_dict["content"] = content
+                        atode_review_dict["date"] = date
+                        atode_review_dict["log_num"] = log_num
+                        atode_review_dict["review_point"] = review_point
+                        atode_review_list.append(atode_review_dict)
+
+                        already_list.append(rev["content"])
 
                 atode_dict["review"] = atode_review_list
                 atode_list.append(atode_dict)
+                # ーーーーーーーーーーーーatode処理end
 
             else:
                 used_st_list.append(store_obj)
@@ -349,15 +336,21 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
                     updated_name_list.append(origin_name)
         # ーーーーーーーーーーーーーー store処理end
 
+        # models.Store.objects.filter(store_name="こまや")[0].pk
+        # models.Media_data.objects.filter(store__store_name="こまや")[1].media_type.id
+
         # media_data処理ーーーーーーーーーーーーーーー
-        md_objs = models.Media_data.objects.select_related("store", "media_type").filter(store__in=used_st_list)
+        exist_md_objs = models.Media_data.objects.select_related("store").filter(store__in=used_st_list, media_type=mt_obj)
         bulk_update_md_list = []
         bulk_create_md_list = []
-        used_md_list = []
-        for i, store_data in enumerate(jfile):
-            print(f'\nあと {jfile_length - i}')
+        bulk_delete_list = []
+        bulk_review_list = []
+        jfile_length = len(jfile)
+        for enum, store_data in enumerate(jfile):
+            print(f'\nあと {jfile_length - enum}')
+            print(f'name: {store_data["name"]}')
 
-            searched_mds = [md for md in md_objs if getattr(md.store, f"store_name_{mt_str}") == store_data["name"] and md.media_type == mt_obj]
+            searched_mds = [md for md in exist_md_objs if getattr(md.store, f"store_name_{mt_str}") == store_data["name"]]
 
             if len(searched_mds) >= 2:  # エラーパターン 重複店名
                 print(f'エラーリスト追加 同store_name_{mt_str} {store_data["name"]}')
@@ -387,31 +380,103 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
                 md_obj.rate = rate
                 md_obj.review_count = review_count
                 bulk_update_md_list.append(md_obj)
+                print('set md to bulk_update_list')
 
+                # review削除用idリスト
+                rev_objs = models.Review.objects.filter(media=md_obj).only("pk")
+                bulk_delete_list += [r.pk for r in rev_objs]
             else:
-                st_obj = next((st for st in used_st_list if st.store_name == store_data["name"] and st.area == area_obj), None)
-                md_obj=models.Media_data(
-                    store=st_obj,
-                    media_type=mt_obj,
-                    collected=collected,
-                    url=url,
-                    rate=rate,
-                    review_count=review_count,
-                )
-                bulk_create_md_list.append(md_obj)
-
-            used_md_list.append(md_obj)
+                try:
+                    st_obj = next((st for st in used_st_list if getattr(st, "store_name") == store_data["origin_name"]), None)
+                except KeyError:
+                    st_obj = next((st for st in used_st_list if getattr(st, f"store_name_{mt_str}") == store_data["name"]), None)
+                if st_obj:
+                    md_obj = models.Media_data(
+                        store=st_obj,
+                        media_type=mt_obj,
+                        collected=collected,
+                        url=url,
+                        rate=rate,
+                        review_count=review_count,
+                    )
+                    bulk_create_md_list.append(md_obj)
+                    print('set md to bulk_create_list')
 
         if bulk_update_md_list:
             models.Media_data.objects.bulk_update(bulk_update_md_list, ["collected", "url", "rate", "review_count"])
+            print('bulk_update_md_list')
+
+        # 確認用
+        import collections
+        if mt_str == "google":
+            counter = collections.Counter([getattr(s.store, "store_name") for s in bulk_create_md_list])
+        else:
+            counter = collections.Counter([getattr(s.store, f"store_name_{mt_str}") for s in bulk_create_md_list])
+        dupli_create_md = [s for s in counter if counter[s] >= 2]  # 出現回数2以上
+        debug(dupli_create_md)
+        # 確認用
+
         if bulk_create_md_list:
             models.Media_data.objects.bulk_create(bulk_create_md_list)
+            print('bulk_create_md_list')
         # ーーーーーーーーーーーーーーーmedia_data処理end
+
+        # review処理ーーーーーーーーーーー
+        md_objs_after_create = models.Media_data.objects.select_related("store").filter(store__in=used_st_list, media_type=mt_obj)
+        for enum, store_data in enumerate(jfile):
+            print(f'\nあと {jfile_length - enum}')
+            md_obj = next((md for md in md_objs_after_create if getattr(md.store, f"store_name_{mt_str}") == store_data["name"]), None)
+            if md_obj:
+                print(f'name: {store_data["name"]}')
+
+                # あとで消すーーーーーーー
+                try:
+                    store_data["review"]
+                except KeyError:
+                    continue
+                # あとで消すーーーーーーー
+
+                try:
+                    already_list = []
+
+                    for rev in store_data["review"]:
+
+                        if rev["content"] in already_list:
+                            continue
+
+                        title, content, date, log_num, review_point = make_rev_parts(rev)
+                        print(date, content[:20])
+
+                        new_rev_obj = models.Review(
+                            media=md_obj,
+                            title=title,
+                            content=content,
+                            review_date=date,
+                            review_point=review_point,
+                            log_num_byTabelog=log_num
+                        )
+
+                        bulk_review_list.append(new_rev_obj)
+                        already_list.append(rev["content"])
+
+                    print('レビュー確認!!bulk_review_list.append')
+
+                except KeyError:
+                    print('no 口コミ')
+        # ーーーーーーーーーーーreview処理end
+
+        if bulk_delete_list:
+            models.Review.objects.filter(pk__in=bulk_delete_list).delete()
+            print('bulk削除 レビュー')
+        if bulk_review_list:
+            models.Review.objects.bulk_create(bulk_review_list)
+            print('bulkクリエイト レビュー')
+        # ーーーーーーーーーーーreview処理 リアルにend
 
         # 店ごとのtotal_rate登録ーーーーー
         st_obj_len = len(used_st_list)
-        for i, st in enumerate(used_st_list):
-            print(f'total_rate登録 あと {st_obj_len-i} 店')
+        for enum, st in enumerate(used_st_list):
+            print(f'total_rate登録 あと {st_obj_len-enum} 店')
             st: models.Store
             store_md = models.Media_data.objects.filter(store=st)
             total_rate = setTotalRateForStore(store_md)
@@ -427,89 +492,17 @@ def insert_from_json(file, area1: str, area2: str, mt_str: str):
             st.total_review_count = total_review_count
             st.save()
 
-
-
-        for i, store_data in enumerate(jfile):
-            print(f'\nあと {jfile_length - i}')
-            (md for md in used_md_list if getattr(md.store, f"store_name_{mt_str}") == store_data["name"])
-            # 口コミーーーーーーーーーー
-            if atode_flg is False:
-                # データ消して刷新
-                rev_objs = models.Review.objects.filter(media=md_obj).only("pk")
-                bulk_delete_list += [r.pk for r in rev_objs]
-                print('ReviewObj delete for renewal')
-
-            try:
-                already_list = []
-                atode_review_list = []
-                for rev in store_data["review"]:
-
-                    if rev["content"] in already_list:
-                        continue
-
-                    try:
-                        title = rev["title"][:100]  # 長さ制限
-                    except KeyError:
-                        title = None
-                    try:
-                        content = rev["content"]
-                    except KeyError:
-                        content = None
-                    try:
-                        date = rev["date"]
-                    except KeyError:
-                        date = None
-                    try:
-                        log_num = rev["log_num"]
-                    except KeyError:
-                        log_num = None
-                    try:
-                        review_point = rev["review_point"]
-                    except KeyError:
-                        review_point = None
-
-                    if atode_flg is False:
-
-                        print(date, content[:20])
-
-                        new_rev_obj = models.Review(
-                            title=title,
-                            content=content,
-                            media=md_obj,
-                            review_date=date,
-                            review_point=review_point,
-                            log_num_byTabelog=log_num
-                        )
-                        bulk_review_list.append(new_rev_obj)
-
-                        print('レビュー確認!!')
-
-            except KeyError:
-                print('no 口コミ')
-                atode_dict["review"] = []
-            if atode_flg:
-                atode_list.append(atode_dict)
-
-            jfile_length -= 1
-
-        models.Review.objects.filter(pk__in=bulk_delete_list).delete()
-        print('bulk削除 レビュー')
-        models.Review.objects.bulk_create(bulk_review_list)
-        print('bulkクリエイト レビュー')
-
         print('作成は、')
         pp(created_list)
-
         print('チェーンリスト')
         print(chain_list)
-
-        filename = os.path.basename(file)
 
         # ーーーーーatode処理ーーーーーーーーーー
         # [{"store_name_db":a,"store_name_site":a,"phone":a,"url":a,"rate":a,
         # "review":[{"title":a,"content":a,"date":a,"log_num":a},{....},{.....}]},
         #  {"name":a, ..........}]
         if atode_list:
+            filename = os.path.basename(file)
             subprocess.run(['noti', "-t", "next.あとでプロセス", "-m", f"{filename}"])
             _created_list, not_adopted_list, doubt_list, closed_list = atode_process(atode_list, mt_obj, area_obj, updated_name_list)
 
