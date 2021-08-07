@@ -478,12 +478,19 @@ def scrape_google():
                     atode_dict["review_count"] = rev_count
 
                     atode_review_list = []
+
+                    # 口コミボタンクリック
+                    no_review_flg = False
                     try:
-                        driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div:nth-child(2) > div > div > div > span:nth-child(3) > span > a').click()  # 口コミボタンクリック
+                        driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div:nth-child(2) > div > div > div > span:nth-child(3) > span > a').click()
                         sleep(1.5)
                     except Exception:
-                        # ng_flg = True
-                        continue
+                        try:
+                            driver.find_element_by_xpath('//span[contains(text(),"他の Google レビュー")]').click()
+                            sleep(1.5)
+                        except Exception:
+                            print('口コミクリックエラー')
+                            no_review_flg = True
 
                     def collect_review():
                         sleep(2)
@@ -537,30 +544,31 @@ def scrape_google():
                                 atode_review_list.append(atode_review_dict)
 
                     # if not ng_flg:
+                    if not no_review_flg:
 
-                    # データ収集。新規順ボタンが押せない場合があるので2周する。
-                    collect_review()
-                    try:
-                        # driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(2) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
-                        driver.find_element_by_xpath("//div[span[contains(text(),'新規順')]]").click()  # 新規順クリック
-
-                        print('新規順クリック')
-                        collect_review()  # もう一回
-                        sleep(1)
-                    except Exception:
+                        # データ収集。新規順ボタンが押せない場合があるので2周する。
+                        collect_review()
                         try:
-                            driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(3) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
+                            # driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(2) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
+                            driver.find_element_by_xpath("//div[span[contains(text(),'新規順')]]").click()  # 新規順クリック
+
                             print('新規順クリック')
                             collect_review()  # もう一回
                             sleep(1)
                         except Exception:
-                            print('新規順クリックerror!!!!!!!!!')
+                            try:
+                                driver.find_element_by_css_selector('div.review-dialog-list > div:nth-of-type(3) > g-scrolling-carousel > div > div > div:nth-of-type(2)').click()  # 新規順クリック
+                                print('新規順クリック')
+                                collect_review()  # もう一回
+                                sleep(1)
+                            except Exception:
+                                print('新規順クリックerror!!!!!!!!!')
 
-                    sleep(1)
+                        sleep(1)
 
-                    # driver.find_element_by_xpath(f'/html/body/span[{store_num}]/g-lightbox/div[2]/div[2]').click() # 閉じるボタン
-                    actions = webdriver.ActionChains(driver)
-                    actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
+                        # driver.find_element_by_xpath(f'/html/body/span[{store_num}]/g-lightbox/div[2]/div[2]').click() # 閉じるボタン
+                        actions = webdriver.ActionChains(driver)
+                        actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
 
                     atode_dict["review"] = atode_review_list
 

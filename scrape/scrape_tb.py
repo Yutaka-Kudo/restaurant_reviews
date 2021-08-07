@@ -91,71 +91,71 @@ def scrape_tb():
     #     # "",
     # ]
 
-    # area1 = "東京都"
-    # area2s = [
-    #     # "中目黒",
-    #     "新宿",
-    #     # "渋谷",
-    #     # "吉祥寺",
-    #     # "銀座",
-    #     # "新橋",
-    #     # "六本木",
-    #     # "大久保",
-    #     # "池袋",
-    #     # "有楽町",
-    #     # "日本橋",
-    #     # "お台場",
-    #     # "中野",
-    #     # "北千住",
-    #     # "町田",
-    #     # "高田馬場",
-    #     # "上野",
-    #     # "浅草",
-    #     # "恵比寿",
-    #     # "練馬",
-    #     # "板橋",
-    #     # "赤羽",
-    #     # "国分寺",
-    #     # "麻布十番",
-    #     # "原宿",
-    #     # "青山一丁目",
-    #     # "秋葉原",
-
-    #     # "水道橋",
-    #     # "自由が丘",
-    #     # "三軒茶屋",
-    #     # "二子玉川",
-    #     # "錦糸町",
-    #     # "押上",
-    #     # "新小岩",
-    #     # "蒲田",
-    #     # "立川",
-    #     # "八王子",
-    #     # "新小岩",
-    #     # "神楽坂",
-    #     # "巣鴨",
-    #     # "品川",
-    #     # "五反田",
-    #     # "大崎",
-    #     # "下北沢",
-    #     # "明大前",
-    #     # "人形町",
-    #     # "門前仲町",
-    #     # "葛西",
-    #     # "府中",
-    #     # "調布",
-    # ]
-
-    area1 = "埼玉県"
+    area1 = "東京都"
     area2s = [
-        # "さいたま市",
-        # "上尾市",
-        # "桶川市",
-        "大宮",
-        # "浦和",
-        # "越谷市",
-        # "熊谷市",
+        # "青山一丁目駅",
+        # "赤羽駅",
+        # "秋葉原駅",
+        # "浅草駅",
+        "麻布十番駅",
+        # "池袋駅",
+        # "板橋駅",
+        # "上野駅",
+        # "恵比寿駅",
+        # "大久保駅",
+        # "お台場海浜公園駅",
+        # "北千住駅",
+        # "吉祥寺駅",
+        # "銀座駅",
+        # "国分寺駅",
+        # "三軒茶屋駅",
+        # "渋谷駅",
+        # "新宿駅",
+        # "新橋駅",
+        # "自由が丘駅",
+        # "水道橋駅",
+        # "高田馬場駅",
+        # "中野駅",
+        # "中目黒駅",
+        # "日本橋駅",
+        # "練馬駅",
+        # "原宿駅",
+        # "二子玉川駅",
+        # "町田駅",
+        # "有楽町駅",
+        # "六本木駅",
+
+        # "錦糸町",
+        # "押上",
+        # "新小岩",
+        # "蒲田",
+        # "立川",
+        # "八王子",
+        # "新小岩",
+        # "神楽坂",
+        # "巣鴨",
+        # "品川",
+        # "五反田",
+        # "大崎",
+        # "下北沢",
+        # "明大前",
+        # "人形町",
+        # "門前仲町",
+        # "葛西",
+        # "府中",
+        # "調布",
     ]
+
+    # area1 = "埼玉県"
+    # area2s = [
+    #     # "さいたま市",
+    #     # "上尾市",
+    #     # "桶川市",
+    #     "大宮",
+    #     # "浦和",
+    #     # "越谷市",
+    #     # "熊谷市",
+    # ]
 
     # area1 = "大阪府"
     # area2s = [
@@ -203,36 +203,43 @@ def scrape_tb():
     # page_range = range(1,3)
 
     range_list = [
-        range(1, 30),
-        range(30, 61),
-        # range(1, 30),
-        # range(1, 21),
-        # range(21, 41),
+        # range(1,30),
+        # range(28,61),
+
+        range(1, 20),
+        range(18, 40),
+        range(38, 61),
     ]
 
     media = "tb"
 
-    OTHER_THAN_RESTAURANTS = [
+    IGNORE_NAMES = [
         "ファミリーマート",
         "ニューデイズ",
         "ピザハット",
         "デイリーヤマザキ",
         "ヤオコー",
-        # "",
-        # "",
-        # "",
+        "スターバックス コーヒー イオンレイクタウン mori 1階店",
+        "すし屋 田ざわ イオンレイクタウンkaze店",
+        "焼肉マルコ",
         # "",
         # "",
     ]
 
     alias_dict = {
-        "麻布": "麻布十番",
-        "青山": "青山一丁目",
+        # "麻布": "麻布十番",
+        # "青山": "青山一丁目",
         # "" : "",
         # "" : "",
         # "" : "",
         # "" : "",
         # "" : "",
+    }
+
+    direct_access_dict = {
+        "浦和": "https://tabelog.com/saitama/A1101/A110102/rstLst",
+        # "": "",
+        # "": "",
     }
 
     # driver = webdriver.Chrome('chromedriver', options=options)
@@ -245,21 +252,35 @@ def scrape_tb():
             # page_rangeをわけてある
             for page_range in range_list:
 
-                driver.get('https://tabelog.com/')
-
-                # 思った通りの第一候補が取れない際
-                try:
-                    area2alias = alias_dict[area2]
-                except KeyError:
-                    area2alias = area2
-                print(f'area2alias {area2alias}')
-
-                area_input = driver.find_element_by_id('sa')
-                if area1 == "東京都":
-                    area_input.send_keys(f'{area2alias}駅' + Keys.ENTER)
+                # エリア選択ーーーーーーーーーーーー
+                if area2 in direct_access_dict:
+                    driver.get(direct_access_dict[area2])
                 else:
+                    driver.get('https://tabelog.com/')
+
+                    # 思った通りの第一候補が取れない際
+                    if area2 in alias_dict:
+                        area2alias = alias_dict[area2]
+                    else:
+                        area2alias = area2
+                    print(f'area2alias {area2alias}')
+
+                    area_input = driver.find_element_by_id('sa')
+                    # if area1 == "東京都":
+                    #     area_input.send_keys(f'{area2alias}駅' + Keys.ENTER)
+                    # else:
+                    #     area_input.send_keys(f'{area2alias}' + Keys.ENTER)
                     area_input.send_keys(f'{area2alias}' + Keys.ENTER)
-                sleep(2)
+                    sleep(2)
+                # ーーーーーーーーーーーーーーーー
+
+                if area1 == "東京都":
+                    # 半径範囲
+                    def hover(elem):
+                        actions = webdriver.ActionChains(driver)
+                        actions.move_to_element(elem).perform()  # ホバー
+                    hover(driver.find_element_by_id('js-leftnavi-area-anchor'))
+                    driver.find_element_by_xpath('//span[text()="500m"]').click()
 
                 start_page = list(page_range)[0]
 
@@ -293,6 +314,9 @@ def scrape_tb():
 
                 # try:
                 if page_end_flg is False:
+                    print(dw.wait_lacated_class_name('list-condition__result').text)
+                    print(dw.wait_lacated_class_name('c-page-count').text)
+
                     for page_num in page_range:
                         print(' ')
                         print(f'ペーーーじーーーーーー{page_num}')
@@ -330,8 +354,8 @@ def scrape_tb():
                             # store_name = driver.find_element_by_class_name('display-name').text
                             store_name = dw.wait_lacated_class_name('display-name').text
 
-                            # 絶対飲食以外のワードならcontinue カラオケ等
-                            if [s for s in OTHER_THAN_RESTAURANTS if s in store_name]:
+                            # 除外名
+                            if [s for s in IGNORE_NAMES if s in store_name]:
                                 driver.execute_script("window.close();")
                                 driver.switch_to.window(handle_array[0])
                                 sleep(1)
@@ -351,10 +375,13 @@ def scrape_tb():
                             try:
                                 alias_name: str = driver.find_element_by_class_name('alias').text.replace("）", "").replace("（", "").replace(" ", "").replace("　", "")
                                 if alias_name.isascii() and alias_name != "":
-                                    yomigana = ""
                                     yomi_roma = alias_name
-                                elif "【" not in alias_name: # 「【旧店名】味都」こんな感じのは除外
+                                    yomigana = ""
+                                elif "【" not in alias_name:
                                     yomigana = alias_name
+                                    yomi_roma = ""
+                                else:
+                                    yomigana = ""
                                     yomi_roma = ""
                             except Exception:
                                 yomigana = ""
@@ -487,8 +514,8 @@ def scrape_tb():
     except Exception as e:
         print(type(e), e)
         capture(driver)
-        print(f'えらー {page_num} キャプチャ！')
-        driver.quit()
+        print(f'えらー  キャプチャ！')
+        # driver.quit()
         raise Exception()
 
     driver.quit()

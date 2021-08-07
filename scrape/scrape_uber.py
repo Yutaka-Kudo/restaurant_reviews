@@ -33,7 +33,7 @@ def is_num(s):
 
 
 def isnoblank(word: str):
-    word = word.replace(' ', '')
+    word = word.replace(' ', '').replace('　', '')
     return word.isalnum()
 
 
@@ -231,5 +231,3 @@ def scrape_uber(area1, area2):
     pp(created_list)
     print('デバッグリスト、')
     pp(debug_list)
-
-

@@ -1,5 +1,6 @@
 from selenium import webdriver
 import random
+from urllib3.packages.six import _add_doc
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
@@ -29,18 +30,25 @@ from site_packages.my_module import collectStoreOtherThanThat
 
 
 def scrape_google_refill():
-    area1 = "千葉県"
+    # area1 = "千葉県"
     # area2 = "木更津市"
     # area2 = "習志野市"
     # area2 = "市川市"
     # area2 = "千葉市"
-    area2 = "松戸市"
+    # area2 = "松戸市"
 
     # area1 = "埼玉県"
     # area2 = "上尾市"
     # area2 = "桶川市"
     # area2 = "熊谷市"
     # area2 = "浦和"
+    # area2 = "大宮"
+    # area2 = "越谷市"
+
+    area1 = "東京都"
+    # area2 = "青山一丁目駅"
+    # area2 = "赤羽駅"
+    area2 = "麻布十番駅"
 
     area_name = area1 + " " + area2
     media = "google"
@@ -48,6 +56,8 @@ def scrape_google_refill():
     print(area1, area2, media)
 
     # collectStoreOtherThanThatやったあとエラーになっても困るので先に開いとく
+    driver_settings.options.add_argument('--headless')  # ヘッドレス
+    driver_settings.options.add_argument('--disable-gpu')  # 不要？?
     # driver = webdriver.Chrome('chromedriver', options=options)
     driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
     dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
@@ -65,15 +75,15 @@ def scrape_google_refill():
     driver.find_element_by_link_text('すべて表示').click()
     sleep(2)
 
-    to_collect = collectStoreOtherThanThat(area_name, media)
-    n = datetime.datetime.now()
-    with open(f"/Users/yutakakudo/Google ドライブ/colab/json/refill_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
-        for line in to_collect:
-            f.write(f"{line}\n")
-    # with open('/Users/yutakakudo/Google ドライブ/colab/json/refill_埼玉県_浦和_2021-07-28_1644.txt') as f:
-    #     to_collect = [s.strip() for s in f.readlines()]
-    # # to_collect[-735]
-    # to_collect = to_collect[-820:]
+    # to_collect = collectStoreOtherThanThat(area_name, media)
+    # n = datetime.datetime.now()
+    # with open(f"/Users/yutakakudo/Google ドライブ/colab/json/refill_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
+    #     for line in to_collect:
+    #         f.write(f"{line}\n")
+    with open('/Users/yutakakudo/Google ドライブ/colab/json/refill_東京都_麻布十番駅_2021-08-07_1727.txt') as f:
+        to_collect = [s.strip() for s in f.readlines()]
+    # to_collect[-735]
+    to_collect = to_collect[-309:]
 
     IGNORE_NAME_LIST = [
         "居酒屋",
@@ -203,7 +213,8 @@ def scrape_google_refill():
             search_window.clear()
             sleep(0.5)
             # search_window.send_keys(f"{area_name} asobi")
-            search_window.send_keys(f"{area_name} 飲食店 {st_name}")
+            # search_window.send_keys(f"{area_name} 飲食店 {st_name}")
+            search_window.send_keys(f"{area_name} {st_name}")
             search_window.submit()
 
             sleep(1.5)
@@ -221,6 +232,9 @@ def scrape_google_refill():
                     print(type(e), e)
                     print('広告カウントでエラー？')
             print("ad_count: " + str(ad_count))
+            # 説明文に「広告」の単語があるだけで↑に引っかかる。現状、その分け方は不可能。せめて広告枠なしで単独の検索結果の場合だけでもの救済
+            if len(details_class) == 1:
+                ad_count = 0
 
             try:
                 driver.find_element_by_css_selector(f'div.rl_full-list > div > div > div > div:nth-child(4) > div:nth-child({1+ad_count})').click()
@@ -292,14 +306,17 @@ def scrape_google_refill():
 
             atode_review_list = []
             no_review_flg = False
+            # 口コミボタンクリック
             try:
-                driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div:nth-child(2) > div > div > div > span:nth-child(3) > span > a').click()  # 口コミボタンクリック
-                sleep(1)
+                driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div:nth-child(2) > div > div > div > span:nth-child(3) > span > a').click()
+                sleep(1.5)
             except Exception:
-                print('口コミクリックなし or エラー')
-                # length -= 1
-                # continue
-                no_review_flg = True
+                try:
+                    driver.find_element_by_xpath('//span[contains(text(),"他の Google レビュー")]').click()
+                    sleep(1.5)
+                except Exception:
+                    print('口コミクリックエラー')
+                    no_review_flg = True
 
             def collect_review():
                 sleep(2)
@@ -371,12 +388,10 @@ def scrape_google_refill():
                     except Exception:
                         print('新規順クリックerror!!!!!!!!!')
 
-
                 # driver.find_element_by_xpath(f'/html/body/span[{store_num}]/g-lightbox/div[2]/div[2]').click() # 閉じるボタン
                 actions = webdriver.ActionChains(driver)
                 actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
 
-                
             atode_dict["review"] = atode_review_list
 
             atode_list.append(atode_dict)

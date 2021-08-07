@@ -1,7 +1,7 @@
 from scrape import models
 from time import sleep
 import datetime
-from site_packages.sub import name_set, address_set, category_set
+from site_packages.sub import set_name, set_address, set_category
 from decimal import Decimal
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -40,7 +40,7 @@ def scrape_one(driver, media, area1, area2, origin_name):
             if alias_name.isascii() and alias_name != "":
                 yomigana = ""
                 yomi_roma = alias_name
-            elif "【" not in alias_name: # 「【旧店名】味都」こんな感じのは除外
+            elif "【" not in alias_name:  # 「【旧店名】味都」こんな感じのは除外
                 yomigana = alias_name
                 yomi_roma = ""
         except Exception:
@@ -54,7 +54,7 @@ def scrape_one(driver, media, area1, area2, origin_name):
         store_name = driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div > div > div > h2').text
         yomigana, yomi_roma = "", ""
 
-    name_set(store_obj, store_name, media, yomigana=yomigana, yomi_roma=yomi_roma)
+    set_name(store_obj, store_name, media, yomigana=yomigana, yomi_roma=yomi_roma)
 
     if media == "tb":
         try:
@@ -82,7 +82,7 @@ def scrape_one(driver, media, area1, area2, origin_name):
             address = ""
             print('住所取得NG')
 
-    address_set(store_obj, address, media)
+    set_address(store_obj, address, media)
 
     if media == "tb":
         try:
@@ -91,7 +91,7 @@ def scrape_one(driver, media, area1, area2, origin_name):
             category_list = None
         # カテゴリ登録
         if category_list:
-            category_set(store_obj, category_list)
+            set_category(store_obj, category_list)
 
     # try:
     #     phone: str = driver.find_elements_by_class_name('rstinfo-table__tel-num')[-1].text
@@ -235,11 +235,16 @@ def scrape_one(driver, media, area1, area2, origin_name):
         driver.execute_script("window.close();")
 
     elif media == "google":
+        # 口コミボタンクリック
         try:
-            driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div:nth-child(2) > div > div > div > span:nth-child(3) > span > a').click()  # 口コミボタンクリック
+            driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div:nth-child(2) > div > div > div > span:nth-child(3) > span > a').click()
             sleep(1.5)
         except Exception:
-            print('口コミクリックエラー')
+            try:
+                driver.find_element_by_xpath('//span[contains(text(),"他の Google レビュー")]').click()
+                sleep(1.5)
+            except Exception:
+                print('口コミクリックエラー')
 
         def collect_review(already_list: list, bulk_review_list: list):
             sleep(2)

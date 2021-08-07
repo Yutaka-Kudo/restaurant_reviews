@@ -13,8 +13,8 @@ import random
 
 def scrape_gn():
     options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
-    options.add_argument('--disable-dev-shm-usage')
+    # options.add_argument('--headless')
+    # options.add_argument('--disable-dev-shm-usage')
 
     user_agent = [
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.2 Safari/605.1.15',
@@ -69,8 +69,8 @@ def scrape_gn():
     #     # "",
     # ]
 
-    # area1 = "東京都"
-    # area2s = [
+    area1 = "東京都"
+    area2s = [
     # "中目黒",
     # "新宿",
     # "渋谷",
@@ -97,7 +97,7 @@ def scrape_gn():
 
     # "麻布",
     # "原宿",
-    # "青山",
+    "青山",
     # "秋葉原",
     # "水道橋",
     # "自由が丘",
@@ -122,22 +122,21 @@ def scrape_gn():
     # "葛西",
     # "府中",
     # "調布",
-
-    # ]
-
-    area1 = "埼玉県"
-    area2s = [
-        # "さいたま市",
-        # "上尾市",
-        # "桶川市",
-        # "大宮",
-        "浦和",
-        # "越谷市",
-        # "熊谷市",
-        # "",
-        # "",
-        # "",
     ]
+
+    # area1 = "埼玉県"
+    # area2s = [
+    #     # "さいたま市",
+    #     # "上尾市",
+    #     # "桶川市",
+    #     # "大宮",
+    #     "浦和",
+    #     # "越谷市",
+    #     # "熊谷市",
+    #     # "",
+    #     # "",
+    #     # "",
+    # ]
 
     # area1 = "大阪府"
     # area2s = [
@@ -171,7 +170,7 @@ def scrape_gn():
         area_list.append([area1, area2])
 
     range_list = [
-        range(1,25),
+        range(1, 25),
         range(23, 51),
         # range(1,25),
         # range(25,61),
@@ -179,11 +178,21 @@ def scrape_gn():
 
     media = "gn"
 
+    IGNORE_NAME_LIST = [
+        "完全個室居酒屋 順順餃子酒場 大宮店",
+        "和食堂 欅 鉄板焼 パレスホテル大宮",
+        "和食堂 欅 寿司 パレスホテル大宮",
+        "和食堂 欅 日本料理 パレスホテル大宮",
+        "",
+        "",
+        "",
+    ]
+
     alias_dict = {
-        "麻布" : "麻布十番",
+        "麻布" : "麻布十番駅",
         "青山" : "青山一丁目",
-        "大宮" : "大宮市", # 都内や大阪以外の場所ならダミーで「市」をつけたり。
-        "浦和" : "浦和市",
+        # "大宮" : "大宮市", # 都内や大阪以外の場所ならダミーで「市」をつけたり。
+        # "浦和" : "浦和市",
         "千葉市" : "千葉駅市",
         # "" : "",
         # "" : "",
@@ -193,7 +202,7 @@ def scrape_gn():
     direct_access_dict = {
         "浦和": "https://r.gnavi.co.jp/area/aream2410/rs/?resp=1&fwp=%E6%B5%A6%E5%92%8C",
         "大宮": "https://r.gnavi.co.jp/area/areal2402/rs/?resp=1&fwp=%E5%A4%A7%E5%AE%AE%E3%83%BB%E3%81%95%E3%81%84%E3%81%9F%E3%81%BE%E6%96%B0%E9%83%BD%E5%BF%83",
-        # "": "",
+        "赤羽": "https://r.gnavi.co.jp/area/aream2248/rs/?resp=1&fwp=%E8%B5%A4%E7%BE%BD",
     }
 
     # driver = webdriver.Chrome('chromedriver', options=options)
@@ -262,10 +271,15 @@ def scrape_gn():
                     dw.wait_lacated_xpath("//input[@value='検索する']").click()
                     sleep(5)
 
+                # 範囲500m
+                if area1 == "東京都":
+                    driver.find_element_by_link_text('500m').click()
+                    sleep(3)
+
                 # 「全〜件」が表示されなければエラーにする
                 try:
                     print(driver.find_element_by_id('gn_pageH1').text)
-                    driver.find_element_by_class_name('result-stats')
+                    print(driver.find_element_by_class_name('result-stats').text)
                 except Exception:
                     print('エリア入力のエラー')
                     driver.quit()
@@ -362,11 +376,14 @@ def scrape_gn():
                                     print(store_name)
                                     atode_dict["name"] = store_name
                                 except Exception:
-                                    # print('かぶりスキップ！')
                                     driver.execute_script("window.close();")
                                     driver.switch_to.window(handle_array[0])
                                     sleep(1)
                                     continue
+                            
+                            if store_name in IGNORE_NAME_LIST:
+                                # ng_flg = True
+                                continue
 
                             # 広告枠のかぶり店
                             if store_name in already_list:
@@ -531,4 +548,3 @@ def scrape_gn():
         raise Exception()
 
     driver.quit()
-

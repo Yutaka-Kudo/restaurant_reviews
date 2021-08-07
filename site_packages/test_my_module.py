@@ -22,7 +22,7 @@ from sub import chain_replace
 #         # return store_obj, rescue_flg
 #         print("rescue_flg",rescue_flg)
 #         self.assertEqual(rescue_flg, False)
-    
+
 
 class TestChainReplace(unittest.TestCase):
     def test_chain_replace(self):
@@ -49,13 +49,13 @@ class TestChainReplace(unittest.TestCase):
         replaced_miraizaka_l = chain_replace(miraizaka_l)
         debug(replaced_miraizaka_l)
 
-        self.assertEqual(replaced_saboten_s, saboten_l.replace(' ', ''))
-        self.assertEqual(replaced_saboten_l, saboten_s.replace(' ', ''))
-        self.assertEqual(replaced_ringer_s, ringer_l.replace(' ', ''))
-        self.assertEqual(replaced_ringer_l, ringer_s.replace(' ', ''))
-        self.assertEqual(replaced_ringer_s2, ringer_l2.replace(' ', ''))
-        self.assertEqual(replaced_ringer_l2, ringer_s2.replace(' ', ''))
-        self.assertEqual(replaced_miraizaka_l, "ミライザカ 北千住店".replace(' ', ''))
+        self.assertEqual(replaced_saboten_s, saboten_l.replace(' ', '').replace('　', ''))
+        self.assertEqual(replaced_saboten_l, saboten_s.replace(' ', '').replace('　', ''))
+        self.assertEqual(replaced_ringer_s, ringer_l.replace(' ', '').replace('　', ''))
+        self.assertEqual(replaced_ringer_l, ringer_s.replace(' ', '').replace('　', ''))
+        self.assertEqual(replaced_ringer_s2, ringer_l2.replace(' ', '').replace('　', ''))
+        self.assertEqual(replaced_ringer_l2, ringer_s2.replace(' ', '').replace('　', ''))
+        self.assertEqual(replaced_miraizaka_l, "ミライザカ 北千住店".replace(' ', '').replace('　', ''))
 
 
 if __name__ == "__main__":

@@ -13,40 +13,50 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
     def handle(self, *args, **options):
 
         filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/*.json")
-        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/tb_埼玉県_浦和_1から28_2021-07-27_0314.json")
-        for file in filepaths:
-            filename = os.path.basename(file)
+        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/tb_東京都_浅草_18から39_2021-08-04_0242.json")
+        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/振り分けリスト/google_東京都_青山一丁目駅_regist_2021-08-06_2231.json")
+
+        prefixes = list(set(["_".join(file.split('_')[:3]) for file in filepaths]))
+        file_group = []
+        for prefix in prefixes:
+            file_group.append([file for file in filepaths if prefix in file])
+
+        is_atode_file = ""
+        for file_list in file_group:
+            # filename = os.path.basename(file)
+            filename = "/".join([os.path.basename(file) for file in file_list])
             # subprocess.run(['say', 'スタート'])
             subprocess.run(['noti', '-m', f"start! {filename}"])
 
-            area1 = file.split('_')[1]
-            area2 = file.split('_')[2]
+            area1 = file_list[0].split('_')[1]
+            area2 = file_list[0].split('_')[2]
             print(f"{area1} {area2}")
 
-            media_type = file.split('_')[0].split('/')[-1]
+            media_type = file_list[0].split('_')[0].split('/')[-1]
             print(f"media_type {media_type}")
+
+            if file_list[0].split('_')[3] == "update":
+                is_atode_file = "update"
+            if file_list[0].split('_')[3] == "regist":
+                is_atode_file = "regist"
 
             importlib.reload(scrape.insert.insert_from_json)
             print("モジュールリロード")
 
-            scrape.insert.insert_from_json.insert_from_json(file, area1, area2, media_type)
-
             try:
-                shutil.move(file, "/Users/yutakakudo/Google ドライブ/colab/json/使用済2")
+                scrape.insert.insert_from_json.insert_from_json(file_list, area1, area2, media_type, is_atode_file=is_atode_file)
             except Exception as e:
-                os.remove(file)
-                print(type(e), e)
-                print('ファイルが重複していましたが、削除して続けます。')
+                subprocess.run(['noti', "-m", "エラー"])
+                raise Exception(type(e), e)
+
+            # try:
+            for file in file_list:
+                shutil.move(file, "/Users/yutakakudo/Google ドライブ/colab/json/使用済2")
+            # except Exception as e:
+            #     os.remove(file)
+            #     print(type(e), e)
+            #     print('ファイルが重複していましたが、削除して続けます。')
 
         subprocess.run(['noti', '-m', "!!!!!!!End!!!!!!!"])
-
-        # if media_type == "gn":
-        #     insert_from_json_gn(file, area1, area2, media_type)
-        # elif media_type == "tb":
-        #     insert_from_json_tb(file, area1, area2, media_type)
-        # elif media_type == "google":
-        #     insert_from_json_google(file, area1, area2, media_type)
-        # elif media_type == "hp":
-        # insert_from_json_hp(file, area1, area2, media_type)
 
         # return super().handle(*args, **options)

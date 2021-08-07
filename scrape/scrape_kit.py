@@ -21,7 +21,7 @@ def generate_json(atode_list, media: str, area1: str, area2: str, start_page: in
             return obj.strftime('%Y-%m-%d')
 
     if start_page:
-        with open(f"{json_path}/{media}_{area1}_{area2}_{start_page}から{page_num}_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
+        with open(f"{json_path}/あとで/{media}_{area1}_{area2}_{start_page}から{page_num}_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
             json.dump(atode_list, f, indent=4, default=date_trans_json)
         print('json dump 作成！！！！！！')
     elif update_or_regist:
@@ -72,5 +72,6 @@ def duplicated_by_google_memo(duplicated_list, area1, area2):
         n = datetime.datetime.now()
     else:
         raise Exception()
-    with open(f"{memo_path}/dupliGoogle_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}", "w") as f:
+    with open(f"{memo_path}/dupliGoogle_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
         f.write("\n".join(duplicated_list))
+    print('Duplication file 作成！')

@@ -22,6 +22,8 @@ selenium = "*"
 webdriver-manager = "*"
 pymysql = "*"
 pykakasi = "*"
+pyperclip = "*"
+send2trash = "*"
 
 [dev-packages]
 flake8 = "*"

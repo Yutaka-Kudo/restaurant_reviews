@@ -1,4 +1,8 @@
 
+from send2trash import send2trash
+from difflib import SequenceMatcher
+import pyperclip
+from glob import glob
 from scrape import models
 from site_packages import sub
 from decimal import Decimal
@@ -60,7 +64,7 @@ def conflict_integration(childname, childmedia, parentname, area=""):
 
     # 名前ーーーーーーーーーー
     # ？？？？？？？？？？？？？？？？？？？？？？
-    # sub.name_set(parent_obj, getattr(child_obj, f"store_name_{childmedia}"), childmedia, getattr(child_obj, "yomigana"), getattr(child_obj, "yomi_roma"),manual=True)
+    # sub.set_name(parent_obj, getattr(child_obj, f"store_name_{childmedia}"), childmedia, getattr(child_obj, "yomigana"), getattr(child_obj, "yomi_roma"),manual=True)
 
     parent_obj.update_name(getattr(child_obj, f"store_name_{childmedia}"), childmedia)  # 各メディア用名前
     # 親のを保持。なかったら入れる
@@ -88,7 +92,7 @@ def conflict_integration(childname, childmedia, parentname, area=""):
         parent_obj.save()
 
     # 住所ーーーーーーーーーー
-    sub.address_set(parent_obj, getattr(child_obj, "address"), childmedia)
+    sub.set_address(parent_obj, getattr(child_obj, "address"), childmedia)
     # # ぐるなびか食べログのを入れる。googleの住所はできれば替えたい
     # if (childmedia == "gn" and getattr(child_obj, "address")) or (childmedia == "tb" and getattr(child_obj, "address")) or (not getattr(parent_obj, "address") and getattr(child_obj, "address")):
     #     parent_obj.address = child_obj.address
@@ -146,54 +150,95 @@ def conflict_integration(childname, childmedia, parentname, area=""):
     parent_obj.save()
 
     # レビューーーーーーーーーーーー
+    if models.Review.objects.filter(media=parent_m_data_obj).exists():
+        models.Review.objects.filter(media=parent_m_data_obj).delete()
+    bulk_rev_list = []
+    already = []
     for o in child_r_objs:
-        r_obj, _ = models.Review.objects.update_or_create(
-            media=parent_m_data_obj, content=o.content
+        if o.content in already:
+            continue
+        try:
+            title = o.title
+        except Exception:
+            title = None
+        try:
+            review_date = o.review_date
+        except Exception:
+            review_date = None
+        try:
+            log_num_byTabelog = o.log_num_byTabelog
+        except Exception:
+            log_num_byTabelog = None
+        try:
+            review_point = o.review_point
+        except Exception:
+            review_point = None
+        r_obj = models.Review(
+            media=parent_m_data_obj,
+            content=o.content,
+            title=title,
+            review_date=review_date,
+            log_num_byTabelog=log_num_byTabelog,
+            review_point=review_point,
         )
-        try:
-            r_obj.title = o.title
-        except Exception:
-            pass
-        try:
-            r_obj.review_date = o.review_date
-        except Exception:
-            pass
-        try:
-            r_obj.log_num_byTabelog = o.log_num_byTabelog
-        except Exception:
-            pass
-        try:
-            r_obj.review_point = o.review_point
-        except Exception:
-            pass
+        bulk_rev_list.append(r_obj)
+        already.append(o.content)
+        # r_obj, _ = models.Review.objects.update_or_create(
+        #     media=parent_m_data_obj, content=o.content
+        # )
+        # r_obj.save()
+    models.Review.objects.bulk_create(bulk_rev_list)
 
-        r_obj.save()
     return child_obj, childmedia, childname, parent_obj, child_m_data_obj
 
 
-area = "埼玉県 越谷市"
+def dupliNameToClip(d_name_len):
+    print(f'あと{d_name_len}')
+    d_name_len -= 1
+    d_names = next(dupli_name_iter)
+    print(f"{d_names[0]}\n{d_names[1]}")
+    d_stores = models.Store.objects.filter(store_name__in=d_names, area__area_name=area)
+    if len(d_stores) <= 1:
+        print('たぶん消してます')
+        return d_name_len
+    st1, st2 = d_stores
+    d_name_lists = []
+    d_name_lists.append([st1.store_name, st2.store_name])
+    if st1.yomigana and st2.yomigana:
+        d_name_lists.append([st1.yomigana, st2.yomigana])
+    if st1.yomi_roma and st2.yomi_roma:
+        d_name_lists.append([st1.yomi_roma, st2.yomi_roma])
+
+    match_list = []
+    for d_name1, d_name2 in d_name_lists:
+        match = SequenceMatcher(None, d_name1, d_name2).find_longest_match(0, len(d_name1), 0, len(d_name2))
+        match_list.append(d_name1[match.a: match.a + match.size])
+    pyperclip.copy(max(match_list, key=len))
+    return d_name_len
+
+
 area = "埼玉県 上尾市"
+area = "埼玉県 越谷市"
+area = "埼玉県 熊谷市"
 area = "埼玉県 大宮"
 area = "埼玉県 浦和"
 area = "千葉県 柏市"
 area = "千葉県 習志野市"
-area = "千葉県 市川市"
-area = "千葉県 船橋市"
-area = "千葉県 木更津市"
-area = "東京都 新宿"
-area = "東京都 青山"
-area = "大阪府 梅田"
-area = "大阪府 天王寺"
+area = "東京都 赤羽駅"
+area = "東京都 青山一丁目駅"
+area = "東京都 秋葉原駅"
 child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="築地銀だこ", childmedia="google", parentname="", area=area)
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="国産牛焼肉食べ放題！ どんどん 上尾店", childmedia="gn", parentname="感激 どんどん 上尾店", area=area)
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="鮒忠 秋葉原ＵＤＸ店", childmedia="gn", parentname="小江戸 鮒忠 秋葉原店", area=area)
 child_obj.delete()
 
+# 単店 google md消す
+models.Media_data.objects.get(store=parent_obj, media_type__media_type="google").delete()
 
-st = models.Store.objects.get(store_name="ばか息子")
-st.yomigana = "ことぶきやほんてん"
-st.yomi_roma = "kotobukiyahonten"
+st:models.Store = models.Store.objects.get(store_name="肉の万世 本店", area__area_name=area)
+st.yomigana = "とんぶざ"
+st.yomi_roma = "tonbuza"
+st.address = "東京都千代田区神田須田町2-21"
 st.save()
-me = models.Media_data.objects.filter(store=st)[0]
 
 if input('media_dataとstore_name_by_media消す？y/n: ') == "y":
     child_m_data_obj.delete()
@@ -207,22 +252,43 @@ if input('store消す？y/n: ') == "y":
         print(f"確認：\n{parent_obj.store_name}\n{parent_obj.yomigana}\n{parent_obj.yomi_roma}")
         parent_obj.update_name(childname)
 
-        parent_obj.yomi_roma = childname
+        parent_obj.yomigana = child_obj.yomigana
+        parent_obj.yomi_roma = child_obj.yomi_roma
         parent_obj.save()
 
 # 消すーーーーーーーーーー
-ta = models.Store.objects.get(store_name="レストラン", area__area_name__icontains="六本木")
-ta = models.Store.objects.get(store_name="旬菜")
-ta.delete()
-models.Store.objects.get(store_name="キリン", area__area_name=area).delete()
+models.Store.objects.get(store_name="焼肉マルコ", area__area_name=area).delete()
 # models.Store.objects.filter(store_name__startswith="ほっともっと").delete()
-# models.Store.objects.filter(area__area_name="埼玉県 越谷市").delete()
+models.Store.objects.filter(area__area_name="東京都 麻布").delete()
+models.Area.objects.get(area_name="東京都 麻布").delete()
 
 # googleのmedia_data消す
 ga = models.Media_data.objects.filter(store__area__area_name="千葉県 船橋市", media_type__media_type="hp")
 ga.delete()
 
-# models.Media_data.objects.filter(store=5148)
+# md 1種類消す
+mt = "google"
+st = models.Store.objects.get(store_name="やまちゃん", area__area_name=area)
+setattr(st, f"store_name_{mt}", None)
+st.save()
+models.Media_data.objects.get(store=st, media_type__media_type=mt).delete()
+
+
+# かぶり店名サーチーーーーーーーーーーー
+filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/dupli*")
+file = filepaths[0]
+area1, area2 = file.split('_')[1], file.split('_')[2]
+area = area1 + " " + area2
+print(f"{file}")
+with open(file) as f:
+    data = f.read()
+name_list: list = data.strip().replace("dupliエラー:", "").split('\n\n')
+d_name_len = len(name_list)
+dupli_name_iter = (n.strip().split("\n") for n in name_list)
+
+d_name_len = dupliNameToClip(d_name_len)
+# かぶり店名サーチーーーーーーーーーーー
+send2trash(file)
 
 
 # storeを area mediatypeで消すーーー
