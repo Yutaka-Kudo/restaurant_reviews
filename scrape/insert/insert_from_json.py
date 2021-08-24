@@ -14,15 +14,22 @@ import datetime
 
 
 from scrape import models
-from site_packages.my_module import store_model_process, atode_process, setTotalRateForStore, make_rev_parts
-from site_packages.sub import IGNORE_STORE_NAME, OTHER_THAN_RESTAURANTS
+from site_packages import my_module
+# from site_packages.my_module import my_module.make_rev_parts
+from site_packages import sub
 from scrape.scrape_kit import duplicated_by_google_memo
 
+import importlib
 
-def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list: list = None, names_for_second_attack: list = None, store_objs=None, is_atode_file: str = ""):
+
+def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list: list = None, names_for_second_attack: list = None, store_objs=None, is_atode_file: str = "", created_list: list = None):
+    importlib.reload(my_module)
+    importlib.reload(sub)
+    print("モジュールリロード my_module")
 
     atode_list = []
-    created_list = []
+    if created_list is None:
+        created_list = []
     chain_list = []
     # bulk_md_list = []
     updated_name_list = []
@@ -95,6 +102,17 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
                 print('重複した店舗があります jsonファイルを直接修正してください')
                 print(dupli_store_list)
                 raise Exception()
+        else:
+            # 重複削除
+            jfile = list(map(json.loads, set(map(json.dumps, jfile))))
+
+            # もしプロパティの違い(データ取得日以外)で重複削除できなければ ← googleはやってない
+            counter = collections.Counter([n["origin_name"] for n in jfile])
+            dupli_store_list = [s for s in counter if counter[s] >= 2]  # 出現回数2以上
+            if dupli_store_list:
+                print('重複した店舗があります jsonファイルを直接修正してください')
+                print(dupli_store_list)
+                raise Exception()
 
         # 2撃目以降
         if names_for_second_attack:
@@ -142,8 +160,8 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
             }
         )
         # 初めてフラグ
-        # first_time = True if _created else False
-        first_time = True if mt_str == "tb" else False
+        first_time = True if _created else False
+        # first_time = True if mt_str == "tb" else False
         # ーーーーーーーーーーーーーーーー
 
         def create_ignoreList():
@@ -234,28 +252,46 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
 
         if not store_objs:  # 持ち越しstore_objsなければ
             store_objs = models.Store.objects.filter(area=area_obj)
+            # store_objs = models.Store.objects.filter(area__area_name="東京都 浅草駅")
+            # len(store_objs)
 
         jfile_length = len(jfile)
         # store処理ーーーーーーーーーーーーーー
+        bulk_st_list = []
         for enum, file_data in enumerate(jfile):
             print(f'\nあと {jfile_length-enum}')
             atode_dict = {}
 
-            store_name = file_data["name"]
+            store_name: str = file_data["name"][:100]
             print("----------------\n" + store_name)
 
-            # 除外ネームならcontinue
-            if store_name in IGNORE_STORE_NAME:
-                print('除外ネーム')
-                continue
-            # 除外ネームならcontinue by_area
-            if store_name in IGNORE_STORE_NAME_BY_AREA:
-                print('除外ネーム')
-                continue
-            # 絶対飲食以外のワードならcontinue カラオケ等
-            if [s for s in OTHER_THAN_RESTAURANTS if re.match(s.replace(' ', '').replace('　', '').replace('　', ''), store_name.replace(' ', '').replace('　', ''))]:
-                print('飲食以外ネーム')
-                continue
+            # refill用ーーーーーーーー
+            try:
+                origin_name = file_data["origin_name"]
+            except Exception:
+                origin_name = ""
+
+            if origin_name:
+                print(f'origin: {origin_name}')
+                store_objs = models.Store.objects.filter(area=area_obj, store_name=origin_name)
+                if not store_objs:
+                    print('店名消しちゃったor変えちゃった')
+                    continue
+            # ーーーーーーーーーーーー
+
+            if not origin_name:
+                # 除外ネームならcontinue
+                if store_name in sub.IGNORE_STORE_NAME:
+                    print('除外ネーム')
+                    continue
+                # 除外ネームならcontinue by_area
+                if store_name in IGNORE_STORE_NAME_BY_AREA:
+                    print('除外ネーム')
+                    continue
+                # 飲食以外のワードならcontinue カラオケ等
+                if [s for s in sub.OTHER_THAN_RESTAURANTS if re.match(s.replace(' ', '').replace('　', ''), store_name.replace(' ', '').replace('　', ''))]:
+                    print('飲食以外ネーム')
+                    continue
 
             # 電話ーーーーーーーーーーー
             try:
@@ -269,7 +305,7 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
                 address = file_data["address"]
                 # 全角→半角 変換 googleが、、、
                 address = address.translate(ZEN2HAN)
-                address = address.replace('日本、', '').strip()
+                address = address.replace('日本、', '').replace('丁目', '-').strip()
             except Exception:
                 address = ""
             # ーーーーーーーーーーーーー
@@ -278,7 +314,7 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
             try:
                 category_list = file_data["category"]
             except Exception:
-                category_list = None
+                category_list = []
             # ーーーーーーーーーーーーーー
 
             # 読み仮名ーーーーーーーーーー
@@ -293,26 +329,39 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
                 yomi_roma = ""
             # ーーーーーーーーーーーー
 
-            # refill用ーーーーーーーー
-            try:
-                origin_name = file_data["origin_name"]
-            except Exception:
-                origin_name = ""
-
-            if origin_name:
-                print(f'origin: {origin_name}')
-                store_objs_one = store_objs.filter(store_name=origin_name)
-                if not store_objs_one:
-                    print('店名消しちゃったor変えちゃった')
-                    continue
-            else:
-                store_objs_one = None
-            # ーーーーーーーーーーーー
+            # 初期登録時ーーーー
+            if first_time:
+                try:
+                    category1 = category_list[0]
+                except Exception:
+                    category1 = None
+                try:
+                    category2 = category_list[1]
+                except Exception:
+                    category2 = None
+                try:
+                    category3 = category_list[2]
+                except Exception:
+                    category3 = None
+                st = models.Store(
+                    area=area_obj,
+                    store_name=store_name,
+                    yomigana=yomigana,
+                    yomi_roma=yomi_roma,
+                    phone_number=phone,
+                    address=address,
+                    category1=category1,
+                    category2=category2,
+                    category3=category3,
+                )
+                setattr(st, f"store_name_{mt_str}", store_name)
+                bulk_st_list.append(st)
+                continue
+            # ーーーー初期登録時
 
             # 店名でstore_object取得  1番近いものを探すーーーー
-            store_obj, _atode_flg, _atode_dict, _created_list, _chain_list = store_model_process(
+            store_obj, _atode_flg, _atode_dict, _created_list, _chain_list = my_module.store_model_process(
                 store_objs=store_objs,
-                store_objs_one=store_objs_one,
                 area_obj=area_obj,
                 media_type=mt_str,
                 store_name=store_name,
@@ -360,21 +409,17 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
                 already_rev_list = []
                 atode_review_list = []
 
-                # あとで消すーーーーーーー
                 try:
                     file_data["review"]
-                    rev_ok = True
                 except KeyError:
-                    rev_ok = False
-                if rev_ok:
-                    # あとで消すーーーーーーー
-
+                    pass
+                else:
                     for rev in file_data["review"]:
 
                         if rev["content"] in already_rev_list:
                             continue
 
-                        title, content, date, log_num, review_point = make_rev_parts(rev)
+                        title, content, date, log_num, review_point = my_module.make_rev_parts(rev)
 
                         # {"name":a,"name":a,"phone":a,"url":a,"rate":a,
                         # "review":[{"content":a,"date":a,"log_num":a},{....},{.....}]}
@@ -408,6 +453,16 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
 
                 if origin_name:
                     updated_name_list.append(origin_name)
+                else:
+                    updated_name_list.append(store_name)
+
+            print(f'store_objsカウント {store_objs.count()}')
+
+        # 初期登録時、一括！
+        if bulk_st_list:
+            models.Store.objects.bulk_create(bulk_st_list)
+            print('bulk_create_store_list')
+            used_st_list = models.Store.objects.filter(area=area_obj)
         # ーーーーーーーーーーーーーー store処理end
 
         # media_data処理ーーーーーーーーーーーーーーー
@@ -420,7 +475,15 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
         jfile_length = len(jfile)
         inspection_dict: dict[str, int] = {}
 
+        # jfileをused_st_listで絞る
+        if jfile[0].get("origin_name"):
+            jfile = [s for s in jfile if s["origin_name"] in updated_name_list]
+        else:
+            jfile = [s for s in jfile if s["name"] in updated_name_list]
+        jfile_length = len(jfile)
+
         for enum, file_data in enumerate(jfile):
+            file_data["name"] = file_data["name"][:100]
             print(f'\nあと {jfile_length - enum}')
             print(f'name: {file_data["name"]}')
 
@@ -441,7 +504,7 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
             md_obj: models.Media_data
             if searched_mds:
                 if len(searched_mds) >= 2:  # エラーパターン 重複店名
-                    print(f'エラーパターン 重複店名 同store_name_{mt_str} {file_data["name"]}')
+                    print(f'エラーパターン 重複店名 同store_name_{mt_str}')
                     print([md.store.store_name for md in searched_mds])
                     # dupli_names.append([f"dupliエラー:{md.store.store_name}" for md in searched_mds] + ["\n"])
                     # raise Exception()
@@ -455,7 +518,7 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
                     md_obj = searched_mds[inspection_dict[file_data["name"]]]
                 else:
                     md_obj = searched_mds[0]
-                
+
                 # media_data用ーーー
                 md_obj.url = url
                 md_obj.collected = collected
@@ -511,9 +574,13 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
         md_objs_after_create = models.Media_data.objects.select_related("store").filter(store__in=used_st_list, media_type=mt_obj)
         inspection_dict: dict[str, int] = {}
         for enum, file_data in enumerate(jfile):
+            file_data["name"] = file_data["name"][:100]
             print(f'\nあと {jfile_length - enum}')
 
             searched_mds = [md for md in md_objs_after_create if getattr(md.store, f"store_name_{mt_str}") == file_data["name"]]
+
+            print(f'name: {file_data["name"]}')
+            print(searched_mds)
 
             if not searched_mds:
                 # errorlist.append(f"not searched_mds: {file_data['name']}")
@@ -530,17 +597,10 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
                 else:
                     md_obj = searched_mds[0]
 
-            # md_obj = next((md for md in md_objs_after_create if getattr(md.store, f"store_name_{mt_str}") == file_data["name"]), None)
-
-                print(f'name: {file_data["name"]}')
-
-                # あとで消すーーーーーーー
                 try:
                     file_data["review"]
                 except KeyError:
                     continue
-                # あとで消すーーーーーーー
-
                 try:
                     already_rev_list = []
 
@@ -549,7 +609,7 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
                         if rev["content"] in already_rev_list:
                             continue
 
-                        title, content, date, log_num, review_point = make_rev_parts(rev)
+                        title, content, date, log_num, review_point = my_module.make_rev_parts(rev)
                         print(date, content[:20])
 
                         new_rev_obj = models.Review(
@@ -584,7 +644,7 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
             print(f'total_rate登録 あと {st_obj_len-enum} 店')
             st: models.Store
             store_md = models.Media_data.objects.filter(store=st)
-            total_rate = setTotalRateForStore(store_md)
+            total_rate = sub.setTotalRateForStore(store_md)
             st.total_rate = total_rate
             st.save()
 
@@ -609,8 +669,8 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
     if atode_list:
         filename = "/".join([os.path.basename(file) for file in file_list])
         subprocess.run(['noti', "-t", "next.あとでプロセス", "-m", f"{filename}"])
-        _created_list, not_adopted_list, doubt_list, closed_list, names_for_second_attack, dupli_names, errorlist = atode_process(
-            atode_list, mt_obj, area_obj, dupli_names, errorlist, doubt_list, updated_name_list, names_for_second_attack, is_atode_file)
+        _created_list, not_adopted_list, doubt_list, closed_list, names_for_second_attack, dupli_names, errorlist, updated_names_at_atode = my_module.atode_process(
+            atode_list, mt_obj, area_obj, dupli_names, errorlist, doubt_list, updated_name_list, names_for_second_attack, is_atode_file, created_list)
 
         created_list += _created_list
 
@@ -636,8 +696,9 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
 
         # 2回転目ーーーーーーーーーーーーーーー
         if names_for_second_attack:
+            store_objs = store_objs.exclude(store_name__in=updated_names_at_atode)
             print('強くてニューゲーム')
-            insert_from_json(file_list, area1, area2, mt_str, doubt_list, names_for_second_attack, store_objs)
+            insert_from_json(file_list, area1, area2, mt_str, doubt_list=doubt_list, names_for_second_attack=names_for_second_attack, store_objs=store_objs, created_list=created_list)
         # 2回転目ーーーーーーーーーーーーーーー
 
     if doubt_list:
@@ -664,6 +725,13 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
         with open(FILENAME, "w") as f:
             f.write("\n".join(errorlist))
         print('write エラーログ')
+
+    if mt_str == "uber" and created_list:
+        created_list = list(set(created_list))
+        n = datetime.datetime.now()
+        with open(f"/Users/yutakakudo/Google ドライブ/colab/json/doubtUber_{mt_str}_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
+            f.write("\n".join(created_list))
+        print('doubt_list作成！')
 
     # エリア別登録数、登録------------
     area_obj.registed = len(models.Store.objects.filter(area=area_obj))

@@ -13,9 +13,6 @@ def generate_json(atode_list, media: str, area1: str, area2: str, start_page: in
     else:
         raise Exception()
 
-    if update_or_regist:
-        json_path += "/振り分けリスト"
-
     def date_trans_json(obj):
         if isinstance(obj, datetime.datetime):
             return obj.strftime('%Y-%m-%d')
@@ -25,11 +22,11 @@ def generate_json(atode_list, media: str, area1: str, area2: str, start_page: in
             json.dump(atode_list, f, indent=4, default=date_trans_json)
         print('json dump 作成！！！！！！')
     elif update_or_regist:
-        with open(f"{json_path}/{media}_{area1}_{area2}_{update_or_regist}_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
+        with open(f"{json_path}/振り分けリスト/{media}_{area1}_{area2}_{update_or_regist}_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
             json.dump(atode_list, f, indent=4, default=date_trans_json)
         print(f'{update_or_regist} リスト 作成！！！！！！')
     else:
-        with open(f"{json_path}/{media}_{area1}_{area2}_補充_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
+        with open(f"{json_path}/あとで/{media}_{area1}_{area2}_補充_{n.strftime('%Y-%m-%d_%H%M')}.json", "w") as f:
             json.dump(atode_list, f, indent=4, default=date_trans_json)
         print('補充file 作成！！！！！！')
 

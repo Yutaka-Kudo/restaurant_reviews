@@ -76,7 +76,7 @@ IGNORE_STORE_NAME = [
     "ペリエ津田沼",
     "おけがわマイン",
     "大宮高島屋",
-    "",
+    "L'UENO（ルエノ）",
     "",
     "",
     "",
@@ -84,11 +84,14 @@ IGNORE_STORE_NAME = [
 ]
 
 OTHER_THAN_RESTAURANTS = [
+    ".*駅$",
     # 漫喫ーーーーーーーーーー
     ".*快活CLUB",
     ".*快活クラブ",
     "メディアカフェポパイ",
     "ゲラゲラ",
+    "まんが喫茶",
+    "マンガ喫茶",
     # カラオケーーーーーーーーーー
     ".*歌うんだ村",
     ".*カラオケ館",
@@ -124,6 +127,7 @@ OTHER_THAN_RESTAURANTS = [
     ".*ハウスコム",
     # コンビニーーーーーーーーーー
     "セブンイレブン",
+    "セブン-イレブン",
     "デイリーヤマザキ",
     "ナチュナルローソン",
     "ニューヤマザキデイリーストア",
@@ -138,15 +142,23 @@ OTHER_THAN_RESTAURANTS = [
     "エキュート",
     "シャポー",
     "三井アウトレットパーク",
+    "LUMINE",
+    "ルミネ",
     # デパートーーーーーーーーーー
     "伊勢丹",
     "イトーヨーカドー",
+    "小田急百貨店",
     "クイーンズ伊勢丹",
+    "京王百貨店",
+    "西武",
     "そごう",
     "髙島屋",
     "東武百貨店",
+    "東急百貨店",
     "東急プラザ",
+    "東急ストア",
     "日本橋髙島屋",
+    "松坂屋",
     "ラフォーレ",
     # スーパーーーーーーーーーーー
     "イオン",
@@ -154,6 +166,8 @@ OTHER_THAN_RESTAURANTS = [
     "カスミ",
     ".*業務スーパー",
     # "IKEA", # IKEA スウェーデンカフェ とかもある
+    "コープ",
+    "さわみつ青果",
     "成城石井",
     "西友",
     "ダイエー",
@@ -169,6 +183,7 @@ OTHER_THAN_RESTAURANTS = [
     "アパホテル",
     "スーパーホテル",
     "東横INN",
+    "ドーミーイン",
     "ホテルリブマックス",
     "ホテルルートイン",
     "ロイヤルパインズホテル",
@@ -178,6 +193,7 @@ OTHER_THAN_RESTAURANTS = [
     ".*銀座惣菜店",
     ".*コーナン",
     "島忠",
+    "100円ショップ シルク",
     "ダイソー",
     "DAISO",
     ".*ティップネス",
@@ -197,6 +213,14 @@ OTHER_THAN_RESTAURANTS = [
 def chain_replace(store_name: str) -> list:
 
     chain_dict = {
+        "青葉": [
+            "青葉",
+            "牛たんと和牛焼き 青葉",
+        ],
+        "揚州商人": [
+            "揚州商人",
+            "中国ラーメン揚州商人",
+        ],
         "甘太郎": [
             "甘太郎",
             "手作り居酒屋 甘太郎",
@@ -208,6 +232,22 @@ def chain_replace(store_name: str) -> list:
         "いきなり": [
             "いきなりステーキ",
             "いきなり！ステーキ",
+        ],
+        "UOKIN": [
+            "UOKIN",
+            "イタリアンバル UOKIN",
+        ],
+        "魚がし日本一": [
+            "魚がし日本一",
+            "寿司 魚がし日本一",
+        ],
+        "宇奈とと": [
+            "宇奈とと",
+            "名代 宇奈とと",
+        ],
+        "エノテカ": [
+            "エノテカ",
+            "ワインショップ・エノテカ",
         ],
         "扇屋": [
             "扇屋",
@@ -225,17 +265,22 @@ def chain_replace(store_name: str) -> list:
             "カフェベローチェ",
             "カフェ・ベローチェ",
         ],
+        "がブリチキン。": [
+            "がブリチキン。",
+            "骨付鳥・からあげ・ハイボール がブリチキン。",
+        ],
         "かまどか": [
             "かまどか",
             "肉料理 和食 土鍋めし かまどか",
+            "熟成焼鳥 居酒屋 かまどか",
         ],
-        "銀座ライオン": [
-            "銀座ライオン",
-            "ビアホール銀座ライオン",
+        "木曽路": [
+            "木曽路",
+            "しゃぶしゃぶ 日本料理 木曽路",
         ],
-        "京ほのか": [
-            "京ほのか",
-            "完全個室 居酒屋 京ほのか",
+        "北の家族": [
+            "北の家族",
+            "北海道酒場 北の家族",
         ],
         "牛角": [
             "牛角",
@@ -243,9 +288,33 @@ def chain_replace(store_name: str) -> list:
             "炭火焼肉 牛角",
             "焼肉酒家 牛角",
         ],
-        "木曽路": [
-            "木曽路",
-            "しゃぶしゃぶ 日本料理 木曽路",
+        "牛繁": [
+            "牛繁",
+            "食べ放題 元氣七輪焼肉 牛繁",
+        ],
+        "京ほのか": [
+            "京ほのか",
+            "完全個室 居酒屋 京ほのか",
+        ],
+        "京都勝牛": [
+            "京都勝牛",
+            "牛カツ京都勝牛",
+        ],
+        "銀座ライオン": [
+            "銀座ライオン",
+            "ビアホール銀座ライオン",
+            "ビヤホール 銀座ライオン",
+            "ビヤレストラン　銀座ライオン",
+            "ビヤ＆ワイングリル銀座ライオン",
+            "ビール＆ワイン グリル銀座ライオン",
+        ],
+        "きんちゃん家": [
+            "きんちゃん家",
+            "50えん焼とりきんちゃん家",
+        ],
+        "金の蔵": [
+            "金の蔵",
+            "きんくら酒場 金の蔵",
         ],
         "九州じゃんがら": [
             "九州じゃんがら",
@@ -255,6 +324,15 @@ def chain_replace(store_name: str) -> list:
             "くら寿司",
             "無添くら寿司",
         ],
+        "玄品": [
+            "玄品",
+            "ふぐ料理 玄品",
+            "玄品 ふぐ・かに料理",
+        ],
+        "神戸屋": [
+            "神戸屋",
+            "フレッシュベーカリー神戸屋",
+        ],
         "五右衛門": [
             "五右衛門",
             "洋麺屋五右衛門",
@@ -263,9 +341,20 @@ def chain_replace(store_name: str) -> list:
             "CoCo壱番屋",
             "カレーハウスCoCo壱番屋",
         ],
+        "CONA": [
+            "CONA",
+            "イタリアン＆ワインバー CONA",
+        ],
         "コメダ珈琲店": [
             "コメダ珈琲店",
             "珈琲所 コメダ珈琲店",
+        ],
+        "KollaBo": [
+            "焼肉・韓国料理 KollaBo",
+            "焼肉・韓国料理 KollaBo(コラボ)",
+            "炭火焼肉・韓国料理 KollaBo",
+            "炭火焼肉・韓国料理 KollaBo(コラボ)",
+            "炭火焼肉・韓国料理 KollaBo （コラボ）",
         ],
         "さかなや道場": [
             "さかなや道場",
@@ -279,16 +368,24 @@ def chain_replace(store_name: str) -> list:
             "全席個室居酒屋 忍家",
             "全席個室ダイニング 忍家",
         ],
-        "新宿さぼてん": [
+        "さぼてん": [
             "新宿さぼてん",
             "新宿とんかつ さぼてん",
             "新宿さぼてんデリカ",
             "とんかつ新宿さぼてん",
             "とんかつ新宿さぼてんデリカ",
         ],
+        "SCHMATZ": [
+            "SCHMATZ",
+            "クラフトビールダイニング SCHMATZ ‐シュマッツ‐",
+        ],
         "四六時中": [
             "四六時中",
             "おひつごはん四六時中",
+        ],
+        "白木屋": [
+            "白木屋",
+            "居楽屋白木屋",
         ],
         "すたみな太郎NEXT": [
             "すたみな太郎NEXT",
@@ -297,10 +394,28 @@ def chain_replace(store_name: str) -> list:
         "すた丼": [
             "元祖すた丼の店",
             "伝説のすた丼屋",
+            "名物すた丼の店",
+        ],
+        "スターバックス": [
+            "スターバックス・コーヒー",
+            "スターバックス コーヒー",
+            "Starbucks Coffee",
+        ],
+        "Starbucks Coffee": [
+            "Starbucks Coffee",
+            "スターバックス コーヒー",
+            "スターバックス・コーヒー",
         ],
         "千年の宴": [
             "千年の宴",
             "個室空間 湯葉豆腐料理 千年の宴",
+        ],
+        "鶏ヤロー": [
+            "それゆけ!鶏ヤロー!",
+            "それゆけ！鶏ヤロー",
+            "それゆけ 鶏ヤロー",
+            "居酒屋それゆけ！鶏ヤロー！",
+            "時間無制限食べ飲み放題2000円酒場 それゆけ！鶏ヤロー",
         ],
         "大吉": [
             "大吉",
@@ -309,29 +424,42 @@ def chain_replace(store_name: str) -> list:
         "ダンダダン": [
             "ダンダダン酒場",
             "肉汁餃子のダンダダン",
-        ],
-        "ダンダダン酒場": [
-            "ダンダダン酒場",
             "肉汁餃子製作所 ダンダダン酒場",
         ],
         "ちばチャン": [
             "ちばチャン",
             "大衆酒場 ちばチャン",
         ],
+        "つな八": [
+            "つな八",
+            "新宿つな八",
+            "天ぷら新宿つな八",
+        ],
         "つぼ八": [
             "つぼ八",
             "北海道の恵み つぼ八",
         ],
         "ディプント": [
+            "ワイン酒場 ディプント",
             "ワインの酒場 ディプント",
             "ワインの酒場。ディプント",
         ],
-        "とんでん": [
-            "和食レストランとんでん",
-            "北海道生まれ和食処とんでん",
+        "Di PUNTO": [
+            "ワイン酒場 ディプント",
+            "ワインの酒場 ディプント",
+            "ワインの酒場。ディプント",
+        ],
+        "東京油組総本店": [
+            "東京油組総本店",
+            "油そば 東京油組総本店",
         ],
         "とりいちず": [
             "とりいちず",
+            "とりいちず酒場",
+            "水炊き 焼鳥 とりいちず酒場",
+            "水炊き・焼鳥 とりいちず酒場",
+            "水炊き・焼き鳥 とりいちず",
+            "水炊き・焼き鳥 とりいちず酒場",
             "水炊き・焼鳥・鶏餃子 とりいちず",
         ],
         "鳥貴族": [
@@ -340,8 +468,23 @@ def chain_replace(store_name: str) -> list:
         ],
         "土間土間": [
             "土間土間",
+            "居酒家土間土間",
             "居酒屋 土間土間",
+            "大人の隠れ家個室 土間土間",
+            "いつでも199円（税込）生ビール土間土間",
             "いつでも190円生ビール 創作居酒屋 土間土間",
+        ],
+        "とんでん": [
+            "和食レストランとんでん",
+            "北海道生まれ和食処とんでん",
+        ],
+        "どん亭": [
+            "どん亭",
+            "しゃぶしゃぶどん亭",
+        ],
+        "nana’s green tea": [
+            "nana’s green tea",
+            "ナナズグリーンティー",
         ],
         "馬車道": [
             "馬車道",
@@ -351,6 +494,10 @@ def chain_replace(store_name: str) -> list:
             "HUB",
             "BRITISH PUB HUB",
         ],
+        "バグース": [
+            "バグース",
+            "BAGUS－バグース－",
+        ],
         "はなの舞": [
             "はなの舞",
             "海鮮居酒屋 はなの舞",
@@ -359,13 +506,31 @@ def chain_replace(store_name: str) -> list:
             "博多劇場",
             "屋台屋 博多劇場",
         ],
-        "ブロンコビリー": [
-            "ブロンコビリー",
-            "ステーキハウス ブロンコビリー",
+        "ふたご": [
+            "ふたご",
+            "大阪焼肉 ホルモン ふたご",
         ],
         "フレッシュネスバーガー": [
             "フレッシュネスバーガー",
             "FRESHNESS BURGER（フレッシュネスバーガー）",
+        ],
+        "ブロンコビリー": [
+            "ブロンコビリー",
+            "ステーキハウス ブロンコビリー",
+        ],
+        "プロント": [
+            "プロント",
+            "プロント PRONTO",
+            "PRONTO",
+        ],
+        "PRONTO": [
+            "PRONTO",
+            "プロント PRONTO",
+            "プロント",
+        ],
+        "ベックスコーヒーショップ": [
+            "ベックスコーヒーショップ",
+            "BECK’S COFFEE SHOP(ベックスコーヒーショップ)",
         ],
         "北海道": [
             "北海道",
@@ -375,9 +540,25 @@ def chain_replace(store_name: str) -> list:
             "ポポラマーマ",
             "ゆであげ生パスタ ポポラマーマ",
         ],
+        "三田製麺所": [
+            "三田製麺所",
+            "つけ麺専門店 三田製麺所",
+        ],
+        "美登利": [
+            "梅丘寿司の美登利総本店",
+            "梅丘 寿司の美登利",
+        ],
         "ミライザカ": [
             "ミライザカ",
             "旨唐揚げと居酒メシ ミライザカ",
+        ],
+        "モミアンドトイズ": [
+            "モミアンドトイズ",
+            "MOMI&TOY'S",
+        ],
+        "MOMI&TOY'S": [
+            "MOMI&TOY'S",
+            "モミアンドトイズ",
         ],
         "山田うどん": [
             "山田うどん",
@@ -391,6 +572,13 @@ def chain_replace(store_name: str) -> list:
         "楽蔵": [
             "楽蔵",
             "全席個室 楽蔵",
+            "全席個室 楽蔵‐RAKUZO‐",
+        ],
+        "パウザ": [
+            "ラパウザ",
+            "ラ・パウザ",
+            "ゆであげパスタ＆ピザ　ラ・パウザ",
+            "ゆであげパスタ＆焼き上げピザ ラパウザ",
         ],
         "リンガーハット": [
             "リンガーハット",
@@ -400,20 +588,23 @@ def chain_replace(store_name: str) -> list:
             "和幸",
             "とんかつ和幸",
         ],
-        "": [
-            "",
-            "",
+        "わん": [
+            "わん",
+            "くいもの屋 わん",
         ],
     }
 
+    def replace_space(name: str):
+        return name.replace(' ', '').replace('　', '')
+
     chain_dict = {k: v for k, v in chain_dict.items() if k}  # 空除去
-    store_name = store_name.replace(' ', '').replace('　', '')
+    store_name = replace_space(store_name)
     # chain_dict keyを回して該当するかチェック
-    key = [s for s in chain_dict.keys() if s.replace(' ', '').replace('　', '') in store_name]
+    key = [s for s in chain_dict.keys() if replace_space(s) in store_name]
     if len(key) == 1:
         key = key[0]  # リスト解除
         kouho_list: list = chain_dict[key]
-        kouho_list = [name.replace(' ', '').replace('　', '') for name in kouho_list]
+        kouho_list = [replace_space(name) for name in kouho_list]
         try:
             hit_sentence = max([re.match(s, store_name).group() for s in kouho_list if re.match(s, store_name)])
             kouho_list.remove(hit_sentence)  # あるやつは除外してメモリ節約
@@ -494,18 +685,57 @@ def set_address(st_obj, address, mt_str):
 
 
 def setTotalRateForStore(store_md) -> float:
-    rate_md = [md for md in store_md if md.media_type.__str__() in ["gn", "google", "tb", "uber"]]
-    rate_list, total_review_count = [], []
-    for md in rate_md:
-        if md.media_type.__str__() == "tb":  # 食べログ補正
-            rate = md.rate + ((md.rate - Decimal("2.5")) * Decimal(".6"))
-        else:
-            rate = md.rate
-        if md.review_count:
-            rate_list.append(rate * md.review_count)
-            total_review_count.append(md.review_count)
-    try:
-        total_rate = sum(rate_list) / sum(total_review_count)
-    except ZeroDivisionError:
+    rate_md, uber_md = [], None
+    for md in store_md:
+        if md.media_type.__str__() in ["gn", "google", "tb"]:
+            rate_md.append(md)
+        elif md.media_type.__str__() in ["uber"]:
+            uber_md = md
+
+    if rate_md:
+        rate_list, total_review_count = [], []
+        for md in rate_md:
+            if md.media_type.__str__() == "tb":  # 食べログ補正
+                rate = md.rate + ((md.rate - Decimal("2.5")) * Decimal(".6"))
+            else:
+                rate = md.rate
+            if md.review_count:
+                rate_list.append(rate * md.review_count)
+                total_review_count.append(md.review_count)
+        try:
+            total_rate = sum(rate_list) / sum(total_review_count)
+        except ZeroDivisionError:
+            total_rate = 0
+
+        # uberは基準点4.5からの差分×(件数200＝100％)を加える
+        if uber_md:
+            if uber_md.rate:
+                add_rate = (uber_md.rate - Decimal("4.5")) * Decimal((uber_md.review_count / (200 / 100)) * 0.01)  # ((件数/(最大件数を100で割った割合))*％割合)
+                total_rate += add_rate
+    else:
         total_rate = 0
+
     return total_rate
+
+
+def deleteAndAddClosedname(name, area1, area2):
+    models.Store.objects.get(store_name=name, area__area_name=f"{area1} {area2}").delete()
+    # 既存のファイルの末尾が改行になってるか
+    try:
+        with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/closed/CLOSEDNAME_{area1}_{area2}.txt", "r") as f:
+            lines = f.readlines()
+        reads = lines[-1][-1]
+        formated_lines = [line.strip() for line in lines]
+    except Exception:
+        reads = "\n"
+        formated_lines = []
+    with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/closed/CLOSEDNAME_{area1}_{area2}.txt", "a") as f:
+        if name not in formated_lines:
+            if reads == "\n":
+                f.write(name)
+            else:
+                f.write("\n")
+                f.write(name)
+            print('closed_list作成')
+        else:
+            print('すでにありました。')

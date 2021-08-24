@@ -39,6 +39,6 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
         elif media == "google_r":
             scrape_google_refill()
         elif media == "uber":
-            scrape_uber(area1, area2)
+            scrape_uber()
 
             # return super().handle(*args, **options)

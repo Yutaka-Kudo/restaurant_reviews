@@ -14,16 +14,16 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
 
         filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/*.json")
         # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/tb_東京都_浅草_18から39_2021-08-04_0242.json")
-        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/振り分けリスト/google_東京都_青山一丁目駅_regist_2021-08-06_2231.json")
+        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/振り分けリスト/google_東京都_六本木駅_update_2021-08-22_1816.json")
 
         prefixes = list(set(["_".join(file.split('_')[:3]) for file in filepaths]))
+        prefixes = sorted(prefixes, reverse=True)  # tbを先にできるか
         file_group = []
         for prefix in prefixes:
             file_group.append([file for file in filepaths if prefix in file])
 
         is_atode_file = ""
         for file_list in file_group:
-            # filename = os.path.basename(file)
             filename = "/".join([os.path.basename(file) for file in file_list])
             # subprocess.run(['say', 'スタート'])
             subprocess.run(['noti', '-m', f"start! {filename}"])
@@ -41,7 +41,7 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
                 is_atode_file = "regist"
 
             importlib.reload(scrape.insert.insert_from_json)
-            print("モジュールリロード")
+            print("モジュールリロード insert_from_json")
 
             try:
                 scrape.insert.insert_from_json.insert_from_json(file_list, area1, area2, media_type, is_atode_file=is_atode_file)

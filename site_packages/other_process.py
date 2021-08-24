@@ -7,6 +7,14 @@ from scrape import models
 from site_packages import sub
 from decimal import Decimal
 import datetime
+import pykakasi
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.keys import Keys
+from scrape import driver_settings, models
+
+
+# searched_mds = models.Media_data.objects.filter(store__in= models.Store.objects.filter(store_name_google="シャンパンバー シュッ!"),media_type__media_type="google")
 
 # media_dataのないstoreを掃除ーーーーーーーーー
 
@@ -192,52 +200,80 @@ def conflict_integration(childname, childmedia, parentname, area=""):
     return child_obj, childmedia, childname, parent_obj, child_m_data_obj
 
 
+driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
 def dupliNameToClip(d_name_len):
-    print(f'あと{d_name_len}')
-    d_name_len -= 1
-    d_names = next(dupli_name_iter)
-    print(f"{d_names[0]}\n{d_names[1]}")
-    d_stores = models.Store.objects.filter(store_name__in=d_names, area__area_name=area)
-    if len(d_stores) <= 1:
-        print('たぶん消してます')
-        return d_name_len
-    st1, st2 = d_stores
-    d_name_lists = []
-    d_name_lists.append([st1.store_name, st2.store_name])
-    if st1.yomigana and st2.yomigana:
-        d_name_lists.append([st1.yomigana, st2.yomigana])
-    if st1.yomi_roma and st2.yomi_roma:
-        d_name_lists.append([st1.yomi_roma, st2.yomi_roma])
+    while True:
+        parent, child = "", ""
+        print(f'あと{d_name_len}')
+        d_name_len -= 1
+        d_names = next(dupli_name_iter)
+        if len(d_names) >= 3:
+            for n in d_names:
+                print(n + "\n")
+            print('注※ 候補が3つ以上です')
+            return d_name_len, parent, child
+        print(f"1:{d_names[0]}\n2:{d_names[1]}")
+        d_stores = models.Store.objects.filter(store_name__in=d_names, area__area_name=area)
+        if len(d_stores) <= 1:
+            print('たぶん消してます')
+            # return d_name_len, parent, child
+            continue
+        st1, st2 = d_stores
+        d_name_lists = []
+        d_name_lists.append([st1.store_name.replace(' ','').replace('　',''), st2.store_name.replace(' ','').replace('　','')])
+        if st1.yomigana and st2.yomigana:
+            converted1 = kakasi.convert(st1.yomigana)
+            yomi1 = "".join([s["hira"] for s in converted1])
+            converted2 = kakasi.convert(st2.yomigana)
+            yomi2 = "".join([s["hira"] for s in converted2])
+            d_name_lists.append([yomi1, yomi2])
+        if st1.yomi_roma and st2.yomi_roma:
+            d_name_lists.append([st1.yomi_roma, st2.yomi_roma])
 
-    match_list = []
-    for d_name1, d_name2 in d_name_lists:
-        match = SequenceMatcher(None, d_name1, d_name2).find_longest_match(0, len(d_name1), 0, len(d_name2))
-        match_list.append(d_name1[match.a: match.a + match.size])
-    pyperclip.copy(max(match_list, key=len))
-    return d_name_len
+        match_list = []
+        for d_name1, d_name2 in d_name_lists:
+            d_name1 = d_name1.replace(area2[:-1],"").replace(area2_roma,"").replace(area2_hira,"")
+            d_name2 = d_name2.replace(area2[:-1],"").replace(area2_roma,"").replace(area2_hira,"")
+            match = SequenceMatcher(None, d_name1, d_name2).find_longest_match(0, len(d_name1), 0, len(d_name2))
+            match_list.append(d_name1[match.a: match.a + match.size])
+        # print(match_list)
+        # pyperclip.copy(max(match_list, key=len))
+
+        # driver.find_element_by_id('input-27').send_keys(area1 + " " + area2  + Keys.ENTER)
+        driver.find_element_by_id('input-18').clear()
+        driver.find_element_by_id('input-18').send_keys(max(match_list, key=len)  + Keys.ENTER)
+        driver.switch_to.window(driver.window_handles[-1])
+
+        submit = input("parent is.. 1 or 2 or 0: ")
+        if submit == "1":
+            parent, child = d_names[0], d_names[1]
+        elif submit == "2":
+            parent, child = d_names[1], d_names[0]
+            
+        return d_name_len, parent, child
 
 
-area = "埼玉県 上尾市"
-area = "埼玉県 越谷市"
-area = "埼玉県 熊谷市"
 area = "埼玉県 大宮"
 area = "埼玉県 浦和"
 area = "千葉県 柏市"
 area = "千葉県 習志野市"
-area = "東京都 赤羽駅"
+area = "東京都 新宿駅"
+area = "東京都 六本木駅"
+area = "東京都 銀座駅"
 area = "東京都 青山一丁目駅"
-area = "東京都 秋葉原駅"
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="築地銀だこ", childmedia="google", parentname="", area=area)
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="鮒忠 秋葉原ＵＤＸ店", childmedia="gn", parentname="小江戸 鮒忠 秋葉原店", area=area)
+area = "東京都 国分寺駅"
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="大衆馬肉酒場 Popular horse meat bar Jockey", childmedia="uber", parentname="大衆馬肉酒場 ジョッキー", area=area)
 child_obj.delete()
 
 # 単店 google md消す
 models.Media_data.objects.get(store=parent_obj, media_type__media_type="google").delete()
+models.Media_data.objects.get(store=st, media_type__media_type="google").delete()
 
-st:models.Store = models.Store.objects.get(store_name="肉の万世 本店", area__area_name=area)
+st: models.Store = models.Store.objects.get(store_name="巴裡 小川軒 サロン・ド・テ 新橋店", area__area_name=area)
 st.yomigana = "とんぶざ"
 st.yomi_roma = "tonbuza"
-st.address = "東京都千代田区神田須田町2-21"
+st.address = "東京都港区麻布十番1-8-5 パステル麻布3F"
+st.store_name_google = None
 st.save()
 
 if input('media_dataとstore_name_by_media消す？y/n: ') == "y":
@@ -257,10 +293,10 @@ if input('store消す？y/n: ') == "y":
         parent_obj.save()
 
 # 消すーーーーーーーーーー
-models.Store.objects.get(store_name="焼肉マルコ", area__area_name=area).delete()
+models.Store.objects.get(store_name="蘭", area__area_name=area).delete()
 # models.Store.objects.filter(store_name__startswith="ほっともっと").delete()
-models.Store.objects.filter(area__area_name="東京都 麻布").delete()
-models.Area.objects.get(area_name="東京都 麻布").delete()
+models.Store.objects.filter(area__area_name="東京都 町田駅").delete()
+models.Area.objects.get(area_name="東京都 町田駅").delete()
 
 # googleのmedia_data消す
 ga = models.Media_data.objects.filter(store__area__area_name="千葉県 船橋市", media_type__media_type="hp")
@@ -285,10 +321,34 @@ with open(file) as f:
 name_list: list = data.strip().replace("dupliエラー:", "").split('\n\n')
 d_name_len = len(name_list)
 dupli_name_iter = (n.strip().split("\n") for n in name_list)
+kakasi = pykakasi.kakasi()
+converted = kakasi.convert(area2[:-1])
+area2_hira = "".join([s["hira"] for s in converted])
+area2_roma = "".join([s["hepburn"] for s in converted])
+print(file)
+driver.get("https://restaurary.com/")
+def bundle_CI(child_mt:str): # まとめて用
+    child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname=child, childmedia=child_mt, parentname=parent, area=area)
+    child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname=child, childmedia="google", parentname=parent, area=area)
+    child_obj.delete()
+    return child_obj, childmedia, childname, parent_obj, child_m_data_obj
 
-d_name_len = dupliNameToClip(d_name_len)
-# かぶり店名サーチーーーーーーーーーーー
+d_name_len, parent, child = dupliNameToClip(d_name_len)
+
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = bundle_CI(child_mt="gn")
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = bundle_CI(child_mt="tb")
+
+parent_obj.update_name(childname) # 名前変更
+sub.deleteAndAddClosedname(childname, area1, area2) # 削除
+sub.deleteAndAddClosedname("春日亭", area1, area2) # 削除
 send2trash(file)
+
+# ひとつずつ用
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname=child, childmedia="gn", parentname=parent, area=area)
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname=child, childmedia="tb", parentname=parent, area=area)
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname=child, childmedia="google", parentname=parent, area=area)
+child_obj.delete()
+# ーーーーーーーーーーーーーーかぶり店名サーチ
 
 
 # storeを area mediatypeで消すーーー
@@ -426,3 +486,15 @@ def collectStoreOtherThanThaaaaaaaaaat():
     with open(f"/Users/yutakakudo/Google ドライブ/colab/json/refill_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
         for line in to_collect:
             f.write(f"{line}\n")
+
+
+# UBER ONLYを探す
+stores = models.Store.objects.filter(area__area_name=area)
+leng = len(stores)
+lilli = []
+for enum, st in enumerate(stores):
+    print(leng - enum)
+    if [md.media_type.media_type for md in models.Media_data.objects.filter(store=st)] == ["uber"]:
+        lilli.append(st.store_name)
+print(lilli)
+models.Store.objects.filter(store_name__in=lilli).delete()

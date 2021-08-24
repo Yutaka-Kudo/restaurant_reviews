@@ -97,7 +97,7 @@ def scrape_tb():
         # "赤羽駅",
         # "秋葉原駅",
         # "浅草駅",
-        "麻布十番駅",
+        # "麻布十番駅",
         # "池袋駅",
         # "板橋駅",
         # "上野駅",
@@ -119,7 +119,7 @@ def scrape_tb():
         # "中目黒駅",
         # "日本橋駅",
         # "練馬駅",
-        # "原宿駅",
+        "原宿駅",
         # "二子玉川駅",
         # "町田駅",
         # "有楽町駅",
@@ -191,9 +191,7 @@ def scrape_tb():
     #     # "",
     # ]
 
-    area_list = []
-    for area2 in area2s:
-        area_list.append([area1, area2])
+    area_list = [[area1,area2] for area2 in area2s]
 
     # page_range = range(1,20)
     # page_range = range(20,40)
@@ -206,8 +204,8 @@ def scrape_tb():
         # range(1,30),
         # range(28,61),
 
-        range(1, 20),
-        range(18, 40),
+        range(1, 21),
+        range(19, 41),
         range(38, 61),
     ]
 
@@ -344,7 +342,7 @@ def scrape_tb():
                             #     raise Exception()
 
                             # webdriver.ActionChains(driver).key_down(Keys.COMMAND).click(elem).perform() # なぜかこれで新規タブで開くと、次の普通クリックでも新規タブが開く
-                            sleep(2)
+                            # sleep(2)
 
                             handle_array = driver.window_handles
                             driver.switch_to.window(handle_array[-1])
@@ -428,26 +426,26 @@ def scrape_tb():
                             # 口コミーーーーーーーーーー
                             try:  # 口コミボタンが無い店もある
                                 driver.find_element_by_class_name('rstdtl-top-rvwlst__more-link').find_element_by_class_name('c-link-circle').click()
-                                sleep(1.5)
+                                sleep(.5)
                                 dw.wait_lacated_link_text('訪問月順').click()
                             except NoSuchElementException:
                                 print('口コミがありません。')
                             else:
-                                sleep(1)
+                                # sleep(1)
+                                sleep(.5)
                                 print('口コミ発見！！')
 
                                 # 「もっと見る」を全て展開ーーーーーーーー
                                 mottomiru_list = driver.find_elements_by_class_name('js-show-review-items')[:6]  # 範囲制限
                                 for i in mottomiru_list:
                                     i.click()
-                                    sleep(0.6)  # 早すぎるとバグる
-                                sleep(1)
+                                    sleep(0.4)  # 早すぎるとバグる
+                                # sleep(1)
                                 res = driver.page_source
                                 soup = BeautifulSoup(res, 'html.parser')
                                 items = soup.select('div.js-rvw-item-clickable-area')[:5]  # 範囲制限
                                 atode_review_list = []
                                 for i, item in enumerate(items):  # 再訪は無視
-                                    no_data_flg = False
                                     log = item.select('.rvw-item__rvwr-balloon-text')[0]
                                     log_num = int(log.text.replace(',', '').replace('ログ', ''))
                                     content_wrap = item.select_one('.rvw-item__review-contents-wrap')
@@ -457,15 +455,16 @@ def scrape_tb():
                                         try:  # タイトルが無い投稿は本文の先頭24文字をとる。
                                             title = content_wrap.select('.rvw-item__rvw-comment')[0].text.strip()[:24] + "…"
                                         except Exception:  # 本文もない場合はpass
-                                            no_data_flg = True
+                                            # no_data_flg = True
                                             print('no data!!')
+                                            continue
                                     try:
                                         review_point = item.select_one('.c-rating-v2__val.c-rating-v2__val--strong.rvw-item__ratings--val').get_text(strip=True)
                                         review_point = float(review_point)
                                     except Exception:  # 評価値がついてない場合は0で入れるので、その後の表示等の処理を注意
                                         review_point = 0
 
-                                    if no_data_flg is False:
+                                    try:
                                         content = item.select('.rvw-item__rvw-comment')[0]
                                         # <br>タグを\nに置き換える
                                         [s.replace_with('\n') for s in content.select('br')]
@@ -490,6 +489,9 @@ def scrape_tb():
                                         atode_review_dict["log_num"] = log_num
                                         atode_review_dict["review_point"] = review_point
                                         atode_review_list.append(atode_review_dict)
+                                    except Exception:
+                                        print('review取得エラー1')
+                                        continue
 
                                 atode_dict["review"] = atode_review_list
 

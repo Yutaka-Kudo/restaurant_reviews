@@ -43,6 +43,9 @@ def scrape_one(driver, media, area1, area2, origin_name):
             elif "【" not in alias_name:  # 「【旧店名】味都」こんな感じのは除外
                 yomigana = alias_name
                 yomi_roma = ""
+            else:
+                yomigana = ""
+                yomi_roma = ""
         except Exception:
             yomigana = ""
             yomi_roma = ""
@@ -163,19 +166,19 @@ def scrape_one(driver, media, area1, area2, origin_name):
     if media == "tb":
         try:  # 口コミボタンが無い店もある
             driver.find_element_by_class_name('rstdtl-top-rvwlst__more-link').find_element_by_class_name('c-link-circle').click()
-            sleep(1)
+            # sleep(1)
         except NoSuchElementException:
             print('口コミがありません。')
         else:
             dw.wait_lacated_link_text('訪問月順').click()
-            sleep(1)
+            # sleep(1)
             print('口コミ発見！！')
 
             # 「もっと見る」を全て展開ーーーーーーーー
             mottomiru_list = driver.find_elements_by_class_name('js-show-review-items')[:6]  # 範囲制限
             for i in mottomiru_list:
                 i.click()
-                sleep(0.6)  # 早すぎるとバグる
+                sleep(0.4)  # 早すぎるとバグる
             sleep(1)
             res = driver.page_source
             soup = BeautifulSoup(res, 'html.parser')
@@ -252,7 +255,8 @@ def scrape_one(driver, media, area1, area2, origin_name):
             for review_num in range(1, 6):
                 try:  # 「もっと見る」があるかないか
                     driver.find_element_by_css_selector(f'div#reviewSort > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type({review_num})').find_element_by_class_name('review-more-link').click()
-                    sleep(0.5)
+                    # sleep(0.5)
+                    sleep(0.3)
                     content = driver.find_element_by_css_selector(
                         f'div#reviewSort > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type({review_num}) > div:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > span > span:nth-of-type(2)').text
                 except Exception:

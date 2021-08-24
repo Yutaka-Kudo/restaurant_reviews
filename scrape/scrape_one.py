@@ -16,6 +16,7 @@ from glob import glob
 from send2trash import send2trash
 
 from scrape import scrape_one_sub
+from site_packages import sub
 
 # options = webdriver.ChromeOptions()
 # options.add_argument('--headless')
@@ -27,6 +28,7 @@ driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver
 
 import importlib
 importlib.reload(driver_settings)
+importlib.reload(scrape_one_sub)
 
 alias_dict = {
     "麻布": "麻布十番",
@@ -54,57 +56,57 @@ area2 = ""
 
 area1 = "東京都"
 
-area2 = "青山一丁目駅",
-area2 = "赤羽駅",
-area2 = "秋葉原駅",
-area2 = "浅草駅",
-area2 = "麻布十番駅",
-area2 = "池袋駅",
-area2 = "板橋駅",
-area2 = "上野駅",
-area2 = "恵比寿駅",
-area2 = "大久保駅",
-area2 = "お台場海浜公園駅",
-area2 = "北千住駅",
-area2 = "吉祥寺駅",
-area2 = "銀座駅",
-area2 = "国分寺駅",
-area2 = "三軒茶屋駅",
-area2 = "渋谷駅",
-area2 = "新宿駅",
-area2 = "新橋駅",
-area2 = "自由が丘駅",
-area2 = "水道橋駅",
-area2 = "高田馬場駅",
-area2 = "中野駅",
-area2 = "中目黒駅",
-area2 = "日本橋駅",
-area2 = "練馬駅",
-area2 = "原宿駅",
-area2 = "二子玉川駅",
-area2 = "町田駅",
-area2 = "有楽町駅",
-area2 = "六本木駅",
+area2 = "青山一丁目駅"
+area2 = "赤羽駅"
+area2 = "秋葉原駅"
+area2 = "浅草駅"
+area2 = "麻布十番駅"
+area2 = "池袋駅"
+area2 = "板橋駅"
+area2 = "上野駅"
+area2 = "恵比寿駅"
+area2 = "大久保駅"
+area2 = "お台場海浜公園駅"
+area2 = "北千住駅"
+area2 = "吉祥寺駅"
+area2 = "銀座駅"
+area2 = "国分寺駅"
+area2 = "三軒茶屋駅"
+area2 = "渋谷駅"
+area2 = "新宿駅"
+area2 = "新橋駅"
+area2 = "自由が丘駅"
+area2 = "水道橋駅"
+area2 = "高田馬場駅"
+area2 = "中野駅"
+area2 = "中目黒駅"
+area2 = "日本橋駅"
+area2 = "練馬駅"
+area2 = "原宿駅"
+area2 = "二子玉川駅"
+area2 = "町田駅"
+area2 = "有楽町駅"
+area2 = "六本木駅"
 
-area2 = "錦糸町",
-area2 = "押上",
-area2 = "新小岩",
-area2 = "蒲田",
-area2 = "立川",
-area2 = "八王子",
-area2 = "新小岩",
-area2 = "神楽坂",
-area2 = "巣鴨",
-area2 = "品川",
-area2 = "五反田",
-area2 = "大崎",
-area2 = "下北沢",
-area2 = "明大前",
-area2 = "人形町",
-area2 = "門前仲町",
-area2 = "葛西",
-area2 = "府中",
-area2 = "調布",
+area2 = "錦糸町"
+area2 = "押上"
+area2 = "新小岩"
+area2 = "蒲田"
+area2 = "立川"
+area2 = "八王子"
+area2 = "新小岩"
+area2 = "神楽坂"
+area2 = "巣鴨"
+area2 = "品川"
+area2 = "五反田"
+area2 = "大崎"
+area2 = "下北沢"
+area2 = "明大前"
+area2 = "人形町"
+area2 = "門前仲町"
+area2 = "葛西"
+area2 = "府中"
+area2 = "調布"
 
 area1 = "埼玉県"
 
@@ -154,7 +156,7 @@ area2 = ""
 # 食べログーーーーーーーーー
 driver.get('https://tabelog.com/')
 # origin_name = "Piacere"
-scrape_one_sub.scrape_one(driver, "tb", area1, area2, "モスバーガー与野西口店")
+scrape_one_sub.scrape_one(driver, "tb", area1, area2, "INC cocktails")
 
 
 def hover(elem):
@@ -172,8 +174,9 @@ importlib.reload(scrape_one_sub)
 
 # 半自動googleサーチーーーーーーーーー
 # コード行の順番変えないように！
-filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/調査部屋/doubt*.txt")
-file = filepaths[0]
+# filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/調査部屋/doubt*.txt")
+filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/doubt_*.txt")
+file = filepaths[1]
 area1,area2 = file.split('_')[2],file.split('_')[3]
 print(f"{area1} {area2}")
 with open(file) as f:
@@ -207,7 +210,11 @@ def search_name(length:int):
 
         address = store_mds[0].store.address
         category = [store_mds[0].store.category1, store_mds[0].store.category2, store_mds[0].store.category3]
-        address2 = address.replace(area1, "")
+        if address:
+            address2 = address.replace(area1, "")
+        else:
+            address2 = ""
+            print('住所が未登録')
         print(category)
         print(f'{address}')
         print(" / ".join(mt_list))
@@ -220,6 +227,8 @@ def search_name(length:int):
         search_window.clear()
         sleep(0.5)
         # search_window.send_keys(f"{area_name} asobi")
+        # if not category[0]:
+        #     category[0] = ""
         search_window.send_keys(f"{area1} {area2} {name}")
         search_window.submit()
 
@@ -228,36 +237,36 @@ def search_name(length:int):
         actions = webdriver.ActionChains(driver)
         actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
 
-        return name, length
+        return name, length, category, address2
+
+def search_name222():
+    search_window = driver.find_element_by_xpath("//input[@aria-label='検索']")
+    search_window.clear()
+    sleep(0.5)
+    # search_window.send_keys(f"{area_name} asobi")
+    if not category[0]:
+        category[0] = ""
+    search_window.send_keys(f"{area1} {area2} {name} {category[0]}")
+    search_window.submit()
+
+    search_window = driver.find_element_by_xpath("//input[@aria-label='検索']")
+    search_window.send_keys(f" ■{address2}")
+    actions = webdriver.ActionChains(driver)
+    actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
 
 
-def deleteAndAddClosedname(name):
-    models.Store.objects.get(store_name=name, area__area_name=f"{area1} {area2}").delete()
-    # 既存のファイルの末尾が改行になってるか
-    try:
-        with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/closed/CLOSEDNAME_{area1}_{area2}.txt", "r") as f:
-            lines = f.readlines()
-        reads = lines[-1][-1]
-        formated_lines = [line.strip() for line in lines]
-    except Exception:
-        reads = "\n"
-        formated_lines = []
-    with open(f"/Users/yutakakudo/Google ドライブ/colab/memo/closed/CLOSEDNAME_{area1}_{area2}.txt", "a") as f:
-        if name not in formated_lines:
-            if reads == "\n":
-                f.write(name)
-            else:
-                f.write("\n")
-                f.write(name)
-            print('closed_list作成')
-        else:
-            print('すでにありました。')
 
+name, length, category, address2 = search_name(length)
+search_name222()
+scrape_one_sub.scrape_one(driver, "google", area1, area2, name) # 登録
 
-name, length = search_name(length)
-scrape_one_sub.scrape_one(driver, "google", area1, area2, name)
-# scrape_one_sub.scrape_one(driver, "google", area1, area2, "やまちゃん")
-deleteAndAddClosedname(name)
+sub.deleteAndAddClosedname(name, area1, area2) # 消す
 
 send2trash(file)
 
+# 手動
+scrape_one_sub.scrape_one(driver, "google", area1, area2, "まこちゃん 本店")
+sub.deleteAndAddClosedname("時勢", area1, area2)
+area2 = "麻布十番駅"
+
+driver.switch_to.window(driver.window_handles[-1])

@@ -24,31 +24,29 @@ try:
 except ImportError:
     from site_packages.my_module import capture, Wait_located
     from scrape.scrape_kit import generate_json, endpage_memo, address_ng_memo, duplicated_by_google_memo
+    from site_packages.sub import OTHER_THAN_RESTAURANTS
 
 
 from site_packages.my_module import collectStoreOtherThanThat
 
 
 def scrape_google_refill():
-    # area1 = "千葉県"
-    # area2 = "木更津市"
-    # area2 = "習志野市"
-    # area2 = "市川市"
-    # area2 = "千葉市"
-    # area2 = "松戸市"
-
-    # area1 = "埼玉県"
-    # area2 = "上尾市"
-    # area2 = "桶川市"
-    # area2 = "熊谷市"
-    # area2 = "浦和"
-    # area2 = "大宮"
-    # area2 = "越谷市"
 
     area1 = "東京都"
-    # area2 = "青山一丁目駅"
-    # area2 = "赤羽駅"
-    area2 = "麻布十番駅"
+    # area2 = "新橋駅"
+    # area2 = "渋谷駅"
+    # area2 = "新橋駅"
+    # area2 = "自由が丘駅"
+    # area2 = "練馬駅"
+    # area2 = "中野駅"
+    # area2 = "中目黒駅"
+    # area2 = "日本橋駅"
+    # area2 = "六本木駅"
+
+    # area2 = "原宿駅"
+    area2 = "二子玉川駅"
+    # area2 = "町田駅"
+    # area2 = "有楽町駅"
 
     area_name = area1 + " " + area2
     media = "google"
@@ -75,42 +73,37 @@ def scrape_google_refill():
     driver.find_element_by_link_text('すべて表示').click()
     sleep(2)
 
-    # to_collect = collectStoreOtherThanThat(area_name, media)
-    # n = datetime.datetime.now()
-    # with open(f"/Users/yutakakudo/Google ドライブ/colab/json/refill_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
-    #     for line in to_collect:
-    #         f.write(f"{line}\n")
-    with open('/Users/yutakakudo/Google ドライブ/colab/json/refill_東京都_麻布十番駅_2021-08-07_1727.txt') as f:
-        to_collect = [s.strip() for s in f.readlines()]
-    # to_collect[-735]
-    to_collect = to_collect[-309:]
+    to_collect = collectStoreOtherThanThat(area_name, media)
+    n = datetime.datetime.now()
+    with open(f"/Users/yutakakudo/Google ドライブ/colab/json/refill_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
+        for line in to_collect:
+            f.write(f"{line}\n")
+    # with open('/Users/yutakakudo/Google ドライブ/colab/json/refill_東京都_中野駅_2021-08-18_0232.txt') as f:
+    #     to_collect = [s.strip() for s in f.readlines()]
+    # to_collect = to_collect[-630:]
+    # # to_collect[-630]
+
+    def replace_space(name: str):
+        return name.replace(' ', '').replace('　', '')
 
     IGNORE_NAME_LIST = [
         "居酒屋",
-        "タウンハウジング吉祥寺店",
         "丸広百貨店 上尾店",
-        "イオンモール上尾",
-        "シャポー船橋",
         "船橋フェイス",
-        "東急プラザ 銀座",
         "マロニエゲート銀座1",
-        "銀座三越",
         "銀座インズ1",
         "GINZA SIX",
         "東京ミッドタウン日比谷",
         "東京国際フォーラム",
         "日比谷グルメゾン",
         "日比谷OKUROJI",
-        "東急プラザ 銀座",
         "銀座コア",
         "日比谷シティ国際ビル",
         "帝劇ビル",
         "日比谷シャンテ",
-        "エキュートエディション有楽町",
         "有楽町産直横丁",
         "新東京ビル",
         "有楽町イトシア",
-        "ルミネ 有楽町",
         "帝国ホテル 東京",
         "有楽町ビル",
         "東京交通会館",
@@ -119,55 +112,37 @@ def scrape_google_refill():
         "お台場たこ焼きミュージアム",
         "ヴィーナスフォート",
         "パレットタウン",
-        "新中野駅",
         "中野サンプラザ",
-        "中野マルイ",
         "1000円カット",
-        "西武渋谷店",
         "グランベリーパーク",
-        "ルミネ町田",
-        "町田マルイ",
         "小田急マルシェ",
-        "小田急百貨店 町田店",
         "レミィ町田",
         "町田モディ",
         "レストラン",
         "東京ミッドタウン",
-        "松坂屋 上野店",
-        "アトレ上野",
         "PC Fixs新宿高田馬場店",
-        "ミニミニ高田馬場店",
         "タウンハウジング高田馬場店",
         "中野ブロードウェイ",
         "恵比寿ガーデンプレイスタワー",
-        "アトレ恵比寿",
         "恵比寿横丁",
         "株式会社シンクロ・フード",
-        "上野マルイ",
         "エミオ 練馬",
         "エミオ練馬高野台",
-        "西友練馬店",
         "ホッピー通り",
         "EKIMISE 浅草",
         "浅草ROX",
         "浅草花やしき",
         "ハッピーロード大山",
         "ビーンズ 赤羽",
-        "イトーヨーカドー 赤羽店",
-        "ダイエー 赤羽店 ・イオンフードスタイル",
         "赤羽アピレ",
-        "エキュート赤羽",
         "スーパーホテル東京・赤羽駅南口",
-        "国分寺マルイ",
         "セレオ国分寺",
         "千日前本店",
         "坐・和民 国分寺南口店",
         "エディオンなんば本店",
         "GEMSなんば",
-        "髙島屋 大阪店",
         "なんばCITY 本館",
         "なんばウォーク",
-        "ビックカメラ なんば店",
         "道頓堀",
         "なんばパークス",
         "ホテルロイヤルクラシック大阪",
@@ -175,7 +150,6 @@ def scrape_google_refill():
         "あべのキューズモール",
         "ミーツ 国分寺",
         "なんばこめじるし",
-        "心斎橋PARCO",
         "大丸心斎橋店",
         "アローホテルイン心斎橋",
         "アメリカ村",
@@ -183,11 +157,17 @@ def scrape_google_refill():
         "ホテルマイステイズ心斎橋",
         "ホテル日航大阪",
         "アルバータ・アルバータ",
-        "",
-        "",
-        "",
+        "お台場海浜公園（東京2020大会）",
+        f"松屋{area2[:-1]}",
+        f"{area2[:-1]}PARCO",
+        f"{area2[:-1]}マルイ",
+        f"{area2[:-1]}ロフト",
+        f"{area2[:-1]}高島屋",
+        f"{area2[:-1]}三越",
+        "NEWoMan新宿",
         "",
     ]
+    IGNORE_NAME_LIST = [replace_space(s) for s in IGNORE_NAME_LIST]
 
     # 全角→半角 変換
     ZEN = "".join(chr(0xff01 + i) for i in range(94))
@@ -222,7 +202,9 @@ def scrape_google_refill():
             atode_dict = {}
 
             # 広告枠とばしーーーーーーーーー
-            details_class = driver.find_elements_by_xpath("//span[contains(@class,'__details')]")
+            details_class = driver.find_elements_by_xpath("//div[contains(@class,'__details')]")  # いつからかspanからdivになった？
+            if not details_class:
+                details_class = driver.find_elements_by_xpath("//span[contains(@class,'__details')]")
             ad_count = 0
             for c in details_class:
                 try:
@@ -245,16 +227,26 @@ def scrape_google_refill():
                 continue
 
             try:
-                store_name = driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div > div > div > h2').text
+                store_name: str = driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div > div > div > h2').text
             except Exception:
                 length -= 1
                 print('store_name取得エラー continue')
+                driver.back()
+                sleep(2)
                 continue
 
-            if store_name in IGNORE_NAME_LIST or re.match(".*駅$", store_name):  # 多分Googleだけ、変な名前や施設名
-                length -= 1
-                print('IGNORE_NAME_LIST continue')
-                continue
+            # 除外ネームーーーーーーーー
+            if replace_space(store_name) in IGNORE_NAME_LIST or [s for s in OTHER_THAN_RESTAURANTS if re.match(replace_space(s), replace_space(store_name))]:
+                try:  # 1つとばして上から2つ目のを取ってみる
+                    driver.find_element_by_css_selector(f'div.rl_full-list > div > div > div > div:nth-child(4) > div:nth-child({2+ad_count})').click()
+                    sleep(2)
+                    store_name = driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div > div > div > h2').text
+                except Exception:
+                    driver.back()
+                    sleep(2)
+                    length -= 1
+                    print('IGNORE_NAME_LIST continue')
+                    continue
 
             atode_dict["name"] = store_name
             atode_dict["origin_name"] = st_name
