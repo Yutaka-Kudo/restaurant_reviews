@@ -96,7 +96,6 @@ OTHER_THAN_RESTAURANTS = [
     ".*歌うんだ村",
     ".*カラオケ館",
     ".*カラオケCLUB DAM",
-    ".*カラオケ コート・ダジュール",
     ".*カラオケシティベア",
     ".*カラオケスタジオ",
     ".*カラオケステージ",
@@ -113,6 +112,7 @@ OTHER_THAN_RESTAURANTS = [
     ".*カラオケラウンジ",
     ".*カラオケルーム",
     ".*カラオケONE",
+    ".*コート・ダジュール",
     ".*スーパーカラオケ",
     ".*JOYSOUND",
     "ひとりカラオケ",
@@ -137,6 +137,7 @@ OTHER_THAN_RESTAURANTS = [
     "ミスタードーナツ",
     "ミニストップ",
     "ローソン",
+    "ナチュラルローソン",
     # 複合施設ーーーーーーーーーーー
     "アトレ",
     "エキュート",
@@ -269,6 +270,10 @@ def chain_replace(store_name: str) -> list:
             "がブリチキン。",
             "骨付鳥・からあげ・ハイボール がブリチキン。",
         ],
+        "壁の穴": [
+            "壁の穴",
+            "パスタ & ピザ 壁の穴",
+        ],
         "かまどか": [
             "かまどか",
             "肉料理 和食 土鍋めし かまどか",
@@ -299,14 +304,6 @@ def chain_replace(store_name: str) -> list:
         "京都勝牛": [
             "京都勝牛",
             "牛カツ京都勝牛",
-        ],
-        "銀座ライオン": [
-            "銀座ライオン",
-            "ビアホール銀座ライオン",
-            "ビヤホール 銀座ライオン",
-            "ビヤレストラン　銀座ライオン",
-            "ビヤ＆ワイングリル銀座ライオン",
-            "ビール＆ワイン グリル銀座ライオン",
         ],
         "きんちゃん家": [
             "きんちゃん家",
@@ -350,6 +347,8 @@ def chain_replace(store_name: str) -> list:
             "珈琲所 コメダ珈琲店",
         ],
         "KollaBo": [
+            "炭火焼肉・韓国料理 KollaBo",
+            "炭火焼肉・韓国料理 KollaBo(コラボ)",
             "焼肉・韓国料理 KollaBo",
             "焼肉・韓国料理 KollaBo(コラボ)",
             "炭火焼肉・韓国料理 KollaBo",
@@ -387,6 +386,14 @@ def chain_replace(store_name: str) -> list:
             "白木屋",
             "居楽屋白木屋",
         ],
+        "スズカフェ": [
+            "スズカフェ",
+            "SUZU CAFE",
+        ],
+        "SUZU CAFE": [
+            "スズカフェ",
+            "SUZU CAFE",
+        ],
         "すたみな太郎NEXT": [
             "すたみな太郎NEXT",
             "食べ放題・バイキング すたみな太郎NEXT",
@@ -397,6 +404,7 @@ def chain_replace(store_name: str) -> list:
             "名物すた丼の店",
         ],
         "スターバックス": [
+            "スターバックス",
             "スターバックス・コーヒー",
             "スターバックス コーヒー",
             "Starbucks Coffee",
@@ -420,6 +428,18 @@ def chain_replace(store_name: str) -> list:
         "大吉": [
             "大吉",
             "やきとり大吉",
+        ],
+        "ダッキーダック": [
+            "ダッキーダック",
+            "オムライス・ケーキ ダッキーダック",
+        ],
+        "タリーズコーヒー": [
+            "タリーズコーヒー",
+            "TULLY’S COFFEE",
+        ],
+        "TULLY’S COFFEE": [
+            "タリーズコーヒー",
+            "TULLY’S COFFEE",
         ],
         "ダンダダン": [
             "ダンダダン酒場",
@@ -452,6 +472,10 @@ def chain_replace(store_name: str) -> list:
         "東京油組総本店": [
             "東京油組総本店",
             "油そば 東京油組総本店",
+        ],
+        "トラジ": [
+            "トラジ",
+            "焼肉トラジ",
         ],
         "とりいちず": [
             "とりいちず",
@@ -486,9 +510,21 @@ def chain_replace(store_name: str) -> list:
             "nana’s green tea",
             "ナナズグリーンティー",
         ],
+        "肉屋の台所": [
+            "肉屋の台所",
+            "和牛焼肉食べ放題 肉屋の台所",
+        ],
         "馬車道": [
             "馬車道",
             "レストラン馬車道",
+        ],
+        "ハーブス": [
+            "ハーブス",
+            "HARBS",
+        ],
+        "HARBS": [
+            "ハーブス",
+            "HARBS",
         ],
         "HUB": [
             "HUB",
@@ -496,6 +532,12 @@ def chain_replace(store_name: str) -> list:
         ],
         "バグース": [
             "バグース",
+            "BAGUS",
+            "BAGUS－バグース－",
+        ],
+        "BAGUS": [
+            "バグース",
+            "BAGUS",
             "BAGUS－バグース－",
         ],
         "はなの舞": [
@@ -565,9 +607,23 @@ def chain_replace(store_name: str) -> list:
             "山田うどん食堂",
             "ファミリー食堂 山田うどん食堂",
         ],
+        "やまと": [
+            "焼肉やまと",
+            "A5黒毛和牛焼肉 やまと",
+        ],
         "酔っ手羽": [
             "酔っ手羽",
             "居酒屋革命酔っ手羽",
+        ],
+        "ライオン": [
+            "ライオン",
+            "銀座ライオン",
+            "銀座ライオンLEO",
+            "ビアホール銀座ライオン",
+            "ビヤホール 銀座ライオン",
+            "ビヤレストラン　銀座ライオン",
+            "ビヤ＆ワイングリル銀座ライオン",
+            "ビール＆ワイン グリル銀座ライオン",
         ],
         "楽蔵": [
             "楽蔵",
@@ -591,6 +647,7 @@ def chain_replace(store_name: str) -> list:
         "わん": [
             "わん",
             "くいもの屋 わん",
+            "くいもん屋 わん",
         ],
     }
 
@@ -600,7 +657,7 @@ def chain_replace(store_name: str) -> list:
     chain_dict = {k: v for k, v in chain_dict.items() if k}  # 空除去
     store_name = replace_space(store_name)
     # chain_dict keyを回して該当するかチェック
-    key = [s for s in chain_dict.keys() if replace_space(s) in store_name]
+    key = [k for k in chain_dict.keys() if replace_space(k) in store_name]
     if len(key) == 1:
         key = key[0]  # リスト解除
         kouho_list: list = chain_dict[key]

@@ -252,8 +252,6 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
 
         if not store_objs:  # 持ち越しstore_objsなければ
             store_objs = models.Store.objects.filter(area=area_obj)
-            # store_objs = models.Store.objects.filter(area__area_name="東京都 浅草駅")
-            # len(store_objs)
 
         jfile_length = len(jfile)
         # store処理ーーーーーーーーーーーーーー
@@ -261,8 +259,7 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
         for enum, file_data in enumerate(jfile):
             print(f'\nあと {jfile_length-enum}')
             atode_dict = {}
-
-            store_name: str = file_data["name"][:100]
+            store_name = file_data["name"]
             print("----------------\n" + store_name)
 
             # refill用ーーーーーーーー
@@ -483,7 +480,6 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
         jfile_length = len(jfile)
 
         for enum, file_data in enumerate(jfile):
-            file_data["name"] = file_data["name"][:100]
             print(f'\nあと {jfile_length - enum}')
             print(f'name: {file_data["name"]}')
 
@@ -537,17 +533,17 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
                     st_obj = next((st for st in used_st_list if getattr(st, "store_name") == file_data["origin_name"]), None)
                 except KeyError:
                     st_obj = next((st for st in used_st_list if getattr(st, f"store_name_{mt_str}") == file_data["name"]), None)
-                if st_obj:
-                    md_obj = models.Media_data(
-                        store=st_obj,
-                        media_type=mt_obj,
-                        collected=collected,
-                        url=url,
-                        rate=rate,
-                        review_count=review_count,
-                    )
-                    bulk_create_md_list.append(md_obj)
-                    print('set md to bulk_create_list')
+                # if st_obj:
+                md_obj = models.Media_data(
+                    store=st_obj,
+                    media_type=mt_obj,
+                    collected=collected,
+                    url=url,
+                    rate=rate,
+                    review_count=review_count,
+                )
+                bulk_create_md_list.append(md_obj)
+                print('set md to bulk_create_list')
 
         if bulk_update_md_list:
             models.Media_data.objects.bulk_update(bulk_update_md_list, ["collected", "url", "rate", "review_count"])
@@ -567,15 +563,16 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
             print('bulk_create_md_list')
         # ーーーーーーーーーーーーーーーmedia_data処理end
 
-        # md_objs_after_create = models.Media_data.objects.select_related("store").filter(store__area__area_name="東京都 秋葉原", media_type__media_type="gn")
-        # searched_mds = [md for md in md_objs_after_create if getattr(md.store, f"store_name_gn") == "一軒め酒場 神田南口"]
-
         # review処理ーーーーーーーーーーー
         md_objs_after_create = models.Media_data.objects.select_related("store").filter(store__in=used_st_list, media_type=mt_obj)
         inspection_dict: dict[str, int] = {}
         for enum, file_data in enumerate(jfile):
-            file_data["name"] = file_data["name"][:100]
             print(f'\nあと {jfile_length - enum}')
+
+            try:
+                file_data["review"]
+            except KeyError:
+                continue
 
             searched_mds = [md for md in md_objs_after_create if getattr(md.store, f"store_name_{mt_str}") == file_data["name"]]
 
@@ -597,37 +594,30 @@ def insert_from_json(file_list, area1: str, area2: str, mt_str: str, doubt_list:
                 else:
                     md_obj = searched_mds[0]
 
-                try:
-                    file_data["review"]
-                except KeyError:
+            already_rev_list = []
+
+            for rev in file_data["review"]:
+
+                if rev["content"] in already_rev_list:
                     continue
-                try:
-                    already_rev_list = []
 
-                    for rev in file_data["review"]:
+                title, content, date, log_num, review_point = my_module.make_rev_parts(rev)
+                print(date, content[:20])
 
-                        if rev["content"] in already_rev_list:
-                            continue
+                new_rev_obj = models.Review(
+                    media=md_obj,
+                    title=title,
+                    content=content,
+                    review_date=date,
+                    review_point=review_point,
+                    log_num_byTabelog=log_num
+                )
 
-                        title, content, date, log_num, review_point = my_module.make_rev_parts(rev)
-                        print(date, content[:20])
+                bulk_review_list.append(new_rev_obj)
+                already_rev_list.append(rev["content"])
 
-                        new_rev_obj = models.Review(
-                            media=md_obj,
-                            title=title,
-                            content=content,
-                            review_date=date,
-                            review_point=review_point,
-                            log_num_byTabelog=log_num
-                        )
+            print('レビュー確認!!bulk_review_list.append')
 
-                        bulk_review_list.append(new_rev_obj)
-                        already_rev_list.append(rev["content"])
-
-                    print('レビュー確認!!bulk_review_list.append')
-
-                except KeyError:
-                    print('no 口コミ')
         # ーーーーーーーーーーーreview処理end
 
         if bulk_delete_list:

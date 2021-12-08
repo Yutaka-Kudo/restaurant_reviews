@@ -319,8 +319,12 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
     kill_list = []
     names_for_second_attack = []
     no_change_pairs = []
+
     if _created_list is None:
         _created_list = []
+    if updated_name_list is None:
+        updated_name_list = []
+
     not_adopted_list = []
     update_list = []
     regist_list = []
@@ -329,8 +333,10 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
         update_list = atode_list
     elif is_atode_file == "regist":
         regist_list = atode_list
+
     else:
         length = len(atode_list)
+        skip_names = []
         for listdata in atode_list:
 
             # 色付けーーーーーーーーーーーー
@@ -412,7 +418,7 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
                         return submit_regist()
 
             def submit_update():
-                submit = input('この名前ですか？y / N or J or H or B： ').lower()
+                submit = input('この名前ですか？y / N or J or H or B or S： ').lower()
                 if submit == "y":
                     update_list.append(listdata)
 
@@ -424,22 +430,32 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
 
                 elif submit == "h":
                     kill_list.append(listdata["store_name_db"])
-                    print('help')
 
                 elif submit == "b":  # 次に回す
                     names_for_second_attack.append({"store_name_site": listdata["store_name_site"], "store_name_db": listdata["store_name_db"]})
+
+                elif submit == "s":
+                    skip_names.append(listdata["store_name_site"])
+                    kill_list.append(listdata["store_name_db"])
+
                 else:
                     return submit_update()
 
             # 既に使ったdb_nameはnames_for_second_attackへーーーーー
-            if next(("aaa" for s in update_list if s["store_name_db"] == listdata["store_name_db"]), None) or listdata["store_name_db"] in updated_name_list:
+            used_names_this_time = [s["store_name_db"] for s in update_list]
+            if listdata["store_name_db"] in (updated_name_list + used_names_this_time):
                 names_for_second_attack.append({"store_name_site": listdata["store_name_site"], "store_name_db": listdata["store_name_db"]})
                 print(f'既に使ったdb_name {listdata["store_name_db"]}')
                 print('☆★☆ ラッキー ☆★☆')
                 sleep(0.1)
                 print('☆★☆ ラッキー ☆★☆')
                 sleep(0.1)
-            # ーーーーーーーーーーーーーーーーーーー
+
+            # skip_name
+            elif listdata["store_name_site"] in skip_names:
+                kill_list.append(listdata["store_name_db"])
+                print("skip name...")
+
             else:
                 submit_update()
 
@@ -459,8 +475,6 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
             # print(f'オートregist_list in {store["store_name_site"]}')
 
     def update_or_regist(datalist, flg: str):
-        bulk_review_list = []
-        bulk_delete_list = []
         length = len(datalist)
         _dupli_names = []
 
@@ -486,7 +500,7 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
             store_objs = models.Store.objects.filter(area=area_obj)
             # ーーーーーーーーーーーーーーーー
 
-        st_obj_list = []
+        used_st_list = []
 
         for i, listdata in enumerate(datalist):
             print(f'{flg} store処理 あと {length-i}')
@@ -514,41 +528,119 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
             if listdata["category"]:
                 sub.set_category(store_obj, listdata["category"])
 
-            st_obj_list.append(store_obj)
+            used_st_list.append(store_obj)
 
-        models.Store.objects.bulk_update(st_obj_list, ["phone_number", "address"])
+        models.Store.objects.bulk_update(used_st_list, ["phone_number", "address"])
         print('bulk store補足')
 
         # media_data登録ーーーーーーーーーーーーーー
-        exist_md_objs = models.Media_data.objects.select_related("store", "media_type").filter(store__in=st_obj_list, media_type=mt_obj)
-        # bulk_create_media_list = []
-        exist_list = [md.store for md in exist_md_objs]
-        bulk_st_obj_list = [st for st in st_obj_list if st not in exist_list]
+        exist_md_objs = models.Media_data.objects.select_related("store", "media_type").filter(store__in=used_st_list, media_type=mt_obj)
 
-        # for st_obj in bulk_st_obj_list:
-        #     md_obj = models.Media_data(
-        #         store=st_obj,
-        #         media_type=mt_obj
-        #     )
-        #     bulk_create_media_list.append(md_obj)
-        bulk_create_media_list = [models.Media_data(store=st_obj,media_type=mt_obj) for st_obj in bulk_st_obj_list]
-
-        models.Media_data.objects.bulk_create(bulk_create_media_list)
-        # ーーーーーーーーーーーーーーーーーーーー
-
-        md_objs_after_create = models.Media_data.objects.select_related("store", "media_type").filter(store__in=st_obj_list, media_type=mt_obj)
+        bulk_update_md_list = []
+        bulk_create_md_list = []
+        bulk_delete_list = []
+        bulk_review_list = []
+        dupli_names = []
         inspection_dict: dict[str, int] = {}
+
         for i, listdata in enumerate(datalist):
             print(f'{flg} md処理 あと {length-i}')
+            print(f'name: {listdata["store_name_site"]}')
+
+            searched_mds = [md for md in exist_md_objs if getattr(md.store, f"store_name_{mt_str}") == listdata["store_name_site"]]
+
+            url = listdata["url"][:1000]
+            collected = listdata["collected"]
+            try:
+                rate = listdata["rate"]
+            except Exception:
+                rate = 0
+            try:
+                review_count = listdata["review_count"]
+            except Exception:
+                review_count = 0
 
             md_obj: models.Media_data
+            if searched_mds:
+                if len(searched_mds) >= 2:  # エラーパターン 重複店名
+                    print(f'dupliエラー 同store_name_{mt_str} {listdata["store_name_site"]}')
+                    print([md.store.store_name for md in searched_mds])
+                    # errorlist.append(f"エラー 同store_name_{mt_str} {listdata['store_name_site']}, {[md.store.store_name for md in searched_mds]}")
+                    # _dupli_names.append([f"dupliエラー:{md.store.store_name}" for md in searched_mds]+["\n"])
+
+                    # 重複店舗はとりあえずそれぞれにデータ入れる
+                    try:
+                        inspection_dict[listdata["store_name_site"]] += 1
+                    except KeyError:
+                        inspection_dict[listdata["store_name_site"]] = 0
+
+                    md_obj = searched_mds[inspection_dict[listdata["store_name_site"]]]
+                else:
+                    md_obj = searched_mds[0]
+
+                md_obj.url = url
+                md_obj.collected = collected
+                md_obj.rate = rate
+                md_obj.review_count = review_count
+
+                bulk_update_md_list.append(md_obj)
+                print('set md to bulk_update_list')
+
+                # review削除用idリスト
+                rev_objs = models.Review.objects.filter(media=md_obj).only("pk")
+                bulk_delete_list += [r.pk for r in rev_objs]
+
+            else:
+
+                searched_sts = [st for st in used_st_list if getattr(st, f"store_name_{mt_str}") == listdata["store_name_site"]]
+
+                if len(searched_sts) >= 2:  # エラーパターン 重複店名
+                    print(f'dupliエラー 同store_name_{mt_str} {listdata["store_name_site"]}')
+                    print([st.store_name for st in searched_sts])
+                    # errorlist.append(f"エラー 同store_name_{mt_str} {listdata['store_name_site']}, {[md.store.store_name for md in searched_sts]}")
+                    # _dupli_names.append([f"dupliエラー:{md.store.store_name}" for md in searched_sts]+["\n"])
+
+                    # 重複店舗はとりあえずそれぞれにデータ入れる
+                    try:
+                        inspection_dict[listdata["store_name_site"]] += 1
+                    except KeyError:
+                        inspection_dict[listdata["store_name_site"]] = 0
+
+                    st_obj = searched_sts[inspection_dict[listdata["store_name_site"]]]
+                else:
+                    st_obj = searched_sts[0]
+
+                # if st_obj:
+                md_obj = models.Media_data(
+                    store=st_obj,
+                    media_type=mt_obj,
+                    collected=collected,
+                    url=url,
+                    rate=rate,
+                    review_count=review_count,
+                )
+                bulk_create_md_list.append(md_obj)
+                print('set md to bulk_create_list')
+
+        if bulk_update_md_list:
+            models.Media_data.objects.bulk_update(bulk_update_md_list, ["collected", "url", "rate", "review_count"])
+            print('bulk_update_md_list')
+
+        if bulk_create_md_list:
+            models.Media_data.objects.bulk_create(bulk_create_md_list)
+            print('bulk_create_md_list')
+
+        # review処理ーーーーーーーーーーー
+        md_objs_after_create = models.Media_data.objects.select_related("store").filter(store__in=used_st_list, media_type=mt_obj)
+        inspection_dict: dict[str, int] = {}
+        for enum, listdata in enumerate(datalist):
+            print(f'\nreview処理 あと {length - enum}')
+
             searched_mds = [md for md in md_objs_after_create if getattr(md.store, f"store_name_{mt_str}") == listdata["store_name_site"]]
 
-            if len(searched_mds) >= 2:  # エラーパターン 重複店名
-                print(f'dupliエラー 同store_name_{mt_str} {listdata["store_name_site"]}')
-                # errorlist.append(f"エラー 同store_name_{mt_str} {listdata['store_name_site']}, {[md.store.store_name for md in searched_mds]}")
-                # _dupli_names.append([f"dupliエラー:{md.store.store_name}" for md in searched_mds]+["\n"])
+            print(f'name: {listdata["store_name_site"]}')
 
+            if len(searched_mds) >= 2:  # エラーパターン 重複店名
                 # 重複店舗はとりあえずそれぞれにデータ入れる
                 try:
                     inspection_dict[listdata["store_name_site"]] += 1
@@ -559,71 +651,44 @@ def atode_process(atode_list: list, mt_obj: models.Media_type, area_obj: models.
             else:
                 md_obj = searched_mds[0]
 
-            if listdata["collected"]:
-                try:
-                    md_obj.collected = listdata["collected"]
-                    md_obj.save()
-                except Exception as e:
-                    errorlist.append(f"{type(e)}, {e}, {listdata['collected']}")
-
-            try:
-                md_obj.rate = listdata["rate"]
-                md_obj.save()
-            except Exception as e:
-                errorlist.append(f"{type(e)}, {e}, {listdata['rate']}")
-
-            try:
-                md_obj.url = listdata["url"]
-                md_obj.save()
-            except KeyError as e:
-                errorlist.append(f"{type(e)}, {e}, {listdata['url']}")
-
-            try:
-                md_obj.review_count = listdata["review_count"]
-                md_obj.save()
-            except KeyError as e:
-                errorlist.append(f"{type(e)}, {e}, {listdata['review_count']}")
-
-            # review登録ーーーーーーーー
-            if flg == "update":
-                # データ消して刷新
-                rev_objs = models.Review.objects.filter(media=md_obj).only("pk")
-                bulk_delete_list += [r.pk for r in rev_objs]
-
             already_rev_list = []
 
-            for review in listdata["review"]:
-                try:
-                    if review["content"] in already_rev_list:
-                        continue
+            for rev in listdata["review"]:
+                # try:
+                if rev["content"] in already_rev_list:
+                    continue
 
-                    new_rev_obj = models.Review(
-                        title=review["title"],
-                        content=review["content"],
-                        media=md_obj,
-                        review_date=review["date"],
-                        review_point=review["review_point"],
-                        log_num_byTabelog=review["log_num"]
-                    )
-                    bulk_review_list.append(new_rev_obj)
+                print(rev["date"], rev["content"][:20])
 
-                    already_rev_list.append(review["content"])
+                new_rev_obj = models.Review(
+                    media=md_obj,
+                    title=rev["title"],
+                    content=rev["content"],
+                    review_date=rev["date"],
+                    review_point=rev["review_point"],
+                    log_num_byTabelog=rev["log_num"],
+                )
+                bulk_review_list.append(new_rev_obj)
 
-                except Exception as e:
-                    print(type(e), e)
-                    print(listdata["store_name_site"])
-                    print('レビュー登録失敗↑')
-                    errorlist.append(f"{type(e)}, {e}, {listdata['store_name_site']}, {review['title']}")
+                already_rev_list.append(rev["content"])
+
+                # except Exception as e:
+                #     print(type(e), e)
+                #     print(listdata["store_name_site"])
+                #     print('レビュー登録失敗↑')
+                #     errorlist.append(f"{type(e)}, {e}, {listdata['store_name_site']}, {review['title']}")
 
         # review登録ーーーーーー
-        models.Review.objects.filter(pk__in=bulk_delete_list).delete()
-        print('bulk削除 レビュー')
-        models.Review.objects.bulk_create(bulk_review_list)
-        print('bulkクリエイト レビュー')
+        if bulk_delete_list:
+            models.Review.objects.filter(pk__in=bulk_delete_list).delete()
+            print('bulk削除 レビュー')
+        if bulk_review_list:
+            models.Review.objects.bulk_create(bulk_review_list)
+            print('bulkクリエイト レビュー')
 
         # 店ごとのtotal_rate登録ーーーーー
-        st_obj_len = len(st_obj_list)
-        for i, st in enumerate(st_obj_list):
+        st_obj_len = len(used_st_list)
+        for i, st in enumerate(used_st_list):
             print(f'{flg} total_rate登録 あと {st_obj_len-i} 店')
             st: models.Store
             store_md = models.Media_data.objects.filter(store=st)

@@ -26,7 +26,6 @@ from site_packages import sub
 # driver = webdriver.Chrome('chromedriver', options=options)
 driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
 
-import importlib
 importlib.reload(driver_settings)
 importlib.reload(scrape_one_sub)
 
@@ -49,7 +48,7 @@ area2 = "習志野市"
 area2 = "松戸市"
 area2 = "銚子市"
 area2 = "館山市"
-area2 = ""
+area2 = "柏市"
 area2 = ""
 area2 = ""
 
@@ -156,17 +155,11 @@ area2 = ""
 # 食べログーーーーーーーーー
 driver.get('https://tabelog.com/')
 # origin_name = "Piacere"
-scrape_one_sub.scrape_one(driver, "tb", area1, area2, "INC cocktails")
+scrape_one_sub.scrape_one(driver, "tb", area1, area2, "南欧創作キッチン Ｂｏｏ Ｆｏｏ Ｗｏｏ")
 
+sub.deleteAndAddClosedname("テラスビュウ", area1, area2)
 
-def hover(elem):
-    actions = webdriver.ActionChains(driver)
-    actions.move_to_element(elem).perform()  # ホバー
-hover(driver.find_element_by_id('js-leftnavi-area-anchor'))
-driver.find_element_by_xpath('//span[text()="500m"]').click()
-
-handle_array = driver.window_handles
-driver.switch_to.window(handle_array[-1])
+driver.switch_to.window(driver.window_handles[-1])
 
 
 importlib.reload(scrape_one_sub)
@@ -177,7 +170,7 @@ importlib.reload(scrape_one_sub)
 # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/調査部屋/doubt*.txt")
 filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/doubt_*.txt")
 file = filepaths[1]
-area1,area2 = file.split('_')[2],file.split('_')[3]
+area1, area2 = file.split('_')[2], file.split('_')[3]
 print(f"{area1} {area2}")
 with open(file) as f:
     data = f.read()
@@ -190,8 +183,7 @@ area_input.send_keys(f'{area1} {area2} 飲食店' + Keys.ENTER)
 driver.find_element_by_link_text('すべて表示').click()
 
 
-
-def search_name(length:int):
+def search_name(length: int):
     for name in name_iter:
         length -= 1
         print(f'あと{length}')
@@ -239,6 +231,7 @@ def search_name(length:int):
 
         return name, length, category, address2
 
+
 def search_name222():
     search_window = driver.find_element_by_xpath("//input[@aria-label='検索']")
     search_window.clear()
@@ -255,18 +248,17 @@ def search_name222():
     actions.send_keys(Keys.ESCAPE).perform()  # 閉じる
 
 
-
 name, length, category, address2 = search_name(length)
 search_name222()
-scrape_one_sub.scrape_one(driver, "google", area1, area2, name) # 登録
+scrape_one_sub.scrape_one(driver, "google", area1, area2, name)  # 登録
 
-sub.deleteAndAddClosedname(name, area1, area2) # 消す
+sub.deleteAndAddClosedname(name, area1, area2)  # 消す
 
 send2trash(file)
 
 # 手動
-scrape_one_sub.scrape_one(driver, "google", area1, area2, "まこちゃん 本店")
-sub.deleteAndAddClosedname("時勢", area1, area2)
+scrape_one_sub.scrape_one(driver, "google", area1, area2, "宮越屋珈琲 日本橋")
+sub.deleteAndAddClosedname("焼鳥 大富", area1, area2)
 area2 = "麻布十番駅"
 
 driver.switch_to.window(driver.window_handles[-1])

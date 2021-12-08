@@ -3,7 +3,6 @@ from send2trash import send2trash
 from difflib import SequenceMatcher
 import pyperclip
 from glob import glob
-from scrape import models
 from site_packages import sub
 from decimal import Decimal
 import datetime
@@ -14,11 +13,7 @@ from selenium.webdriver.common.keys import Keys
 from scrape import driver_settings, models
 
 
-# searched_mds = models.Media_data.objects.filter(store__in= models.Store.objects.filter(store_name_google="シャンパンバー シュッ!"),media_type__media_type="google")
-
 # media_dataのないstoreを掃除ーーーーーーーーー
-
-
 def clean_store_obj(area_obj):
     # store_objs = models.Store.objects.all()
     store_objs = models.Store.objects.filter(area__area_name="千葉県 船橋市")
@@ -201,6 +196,8 @@ def conflict_integration(childname, childmedia, parentname, area=""):
 
 
 driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
+
+
 def dupliNameToClip(d_name_len):
     while True:
         parent, child = "", ""
@@ -220,7 +217,7 @@ def dupliNameToClip(d_name_len):
             continue
         st1, st2 = d_stores
         d_name_lists = []
-        d_name_lists.append([st1.store_name.replace(' ','').replace('　',''), st2.store_name.replace(' ','').replace('　','')])
+        d_name_lists.append([st1.store_name.replace(' ', '').replace('　', ''), st2.store_name.replace(' ', '').replace('　', '')])
         if st1.yomigana and st2.yomigana:
             converted1 = kakasi.convert(st1.yomigana)
             yomi1 = "".join([s["hira"] for s in converted1])
@@ -232,8 +229,8 @@ def dupliNameToClip(d_name_len):
 
         match_list = []
         for d_name1, d_name2 in d_name_lists:
-            d_name1 = d_name1.replace(area2[:-1],"").replace(area2_roma,"").replace(area2_hira,"")
-            d_name2 = d_name2.replace(area2[:-1],"").replace(area2_roma,"").replace(area2_hira,"")
+            d_name1 = d_name1.replace(area2[:-1], "").replace(area2_roma, "").replace(area2_hira, "")
+            d_name2 = d_name2.replace(area2[:-1], "").replace(area2_roma, "").replace(area2_hira, "")
             match = SequenceMatcher(None, d_name1, d_name2).find_longest_match(0, len(d_name1), 0, len(d_name2))
             match_list.append(d_name1[match.a: match.a + match.size])
         # print(match_list)
@@ -241,15 +238,18 @@ def dupliNameToClip(d_name_len):
 
         # driver.find_element_by_id('input-27').send_keys(area1 + " " + area2  + Keys.ENTER)
         driver.find_element_by_id('input-18').clear()
-        driver.find_element_by_id('input-18').send_keys(max(match_list, key=len)  + Keys.ENTER)
+        driver.find_element_by_id('input-18').send_keys(max(match_list, key=len) + Keys.ENTER)
         driver.switch_to.window(driver.window_handles[-1])
 
-        submit = input("parent is.. 1 or 2 or 0: ")
+        submit = input("parent is.. 1 or 2 or d: ")
         if submit == "1":
             parent, child = d_names[0], d_names[1]
         elif submit == "2":
             parent, child = d_names[1], d_names[0]
-            
+        elif submit == "d":
+            sub.deleteAndAddClosedname(d_names[0], area1, area2)  # 削除
+            sub.deleteAndAddClosedname(d_names[1], area1, area2)  # 削除
+
         return d_name_len, parent, child
 
 
@@ -262,14 +262,14 @@ area = "東京都 六本木駅"
 area = "東京都 銀座駅"
 area = "東京都 青山一丁目駅"
 area = "東京都 国分寺駅"
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="大衆馬肉酒場 Popular horse meat bar Jockey", childmedia="uber", parentname="大衆馬肉酒場 ジョッキー", area=area)
+child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname="ハーブス 東京ミッドタウン店", childmedia="gn", parentname="HARBS 東京ミッドタウン店", area=area)
 child_obj.delete()
 
 # 単店 google md消す
 models.Media_data.objects.get(store=parent_obj, media_type__media_type="google").delete()
 models.Media_data.objects.get(store=st, media_type__media_type="google").delete()
 
-st: models.Store = models.Store.objects.get(store_name="巴裡 小川軒 サロン・ド・テ 新橋店", area__area_name=area)
+st: models.Store = models.Store.objects.get(store_name="ブリコラージュ ブレッド アンド カンパニー ベーカリー", area__area_name=area)
 st.yomigana = "とんぶざ"
 st.yomi_roma = "tonbuza"
 st.address = "東京都港区麻布十番1-8-5 パステル麻布3F"
@@ -325,23 +325,36 @@ kakasi = pykakasi.kakasi()
 converted = kakasi.convert(area2[:-1])
 area2_hira = "".join([s["hira"] for s in converted])
 area2_roma = "".join([s["hepburn"] for s in converted])
+pyperclip.copy(area)
 print(file)
 driver.get("https://restaurary.com/")
-def bundle_CI(child_mt:str): # まとめて用
+def bundle_CI(child,child_mt: str,parent):  # まとめて用
     child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname=child, childmedia=child_mt, parentname=parent, area=area)
     child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname=child, childmedia="google", parentname=parent, area=area)
     child_obj.delete()
     return child_obj, childmedia, childname, parent_obj, child_m_data_obj
+def matomete(d_name_len):
+    d_name_len, parent, child = dupliNameToClip(d_name_len)
+    if not parent:
+        return d_name_len,"","","","","","",""
+    inp = input("child_media?: ")
+    inp = "gn" if inp == "g" else "tb" if inp == "t" else ""
+    child_obj, childmedia, childname, parent_obj, child_m_data_obj = bundle_CI(child,inp,parent)
+    return d_name_len, parent, child, child_obj, childmedia, childname, parent_obj, child_m_data_obj
 
-d_name_len, parent, child = dupliNameToClip(d_name_len)
 
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = bundle_CI(child_mt="gn")
-child_obj, childmedia, childname, parent_obj, child_m_data_obj = bundle_CI(child_mt="tb")
+d_name_len, parent, child, child_obj, childmedia, childname, parent_obj, child_m_data_obj = matomete(d_name_len)
 
-parent_obj.update_name(childname) # 名前変更
-sub.deleteAndAddClosedname(childname, area1, area2) # 削除
-sub.deleteAndAddClosedname("春日亭", area1, area2) # 削除
+parent_obj.update_name(childname)  # 名前変更
+sub.deleteAndAddClosedname(childname, area1, area2)  # 削除
+sub.deleteAndAddClosedname("越前若狭 鯖街道", area1, area2)  # 削除
 send2trash(file)
+
+driver.switch_to.window(driver.window_handles[-1])
+
+# child_obj, childmedia, childname, parent_obj, child_m_data_obj = bundle_CI(child_mt="gn")
+# child_obj, childmedia, childname, parent_obj, child_m_data_obj = bundle_CI(child_mt="tb")
+
 
 # ひとつずつ用
 child_obj, childmedia, childname, parent_obj, child_m_data_obj = conflict_integration(childname=child, childmedia="gn", parentname=parent, area=area)

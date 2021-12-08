@@ -32,6 +32,9 @@ from site_packages.my_module import collectStoreOtherThanThat
 
 def scrape_google_refill():
 
+    driver_settings.options.add_argument('--headless')  # ヘッドレス
+    driver_settings.options.add_argument('--disable-gpu')  # 不要？?
+
     area1 = "東京都"
     # area2 = "新橋駅"
     # area2 = "渋谷駅"
@@ -44,9 +47,9 @@ def scrape_google_refill():
     # area2 = "六本木駅"
 
     # area2 = "原宿駅"
-    area2 = "二子玉川駅"
+    # area2 = "二子玉川駅"
     # area2 = "町田駅"
-    # area2 = "有楽町駅"
+    area2 = "有楽町駅"
 
     area_name = area1 + " " + area2
     media = "google"
@@ -54,8 +57,6 @@ def scrape_google_refill():
     print(area1, area2, media)
 
     # collectStoreOtherThanThatやったあとエラーになっても困るので先に開いとく
-    driver_settings.options.add_argument('--headless')  # ヘッドレス
-    driver_settings.options.add_argument('--disable-gpu')  # 不要？?
     # driver = webdriver.Chrome('chromedriver', options=options)
     driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driver_settings.options)
     dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
@@ -78,10 +79,9 @@ def scrape_google_refill():
     with open(f"/Users/yutakakudo/Google ドライブ/colab/json/refill_{area1}_{area2}_{n.strftime('%Y-%m-%d_%H%M')}.txt", "w") as f:
         for line in to_collect:
             f.write(f"{line}\n")
-    # with open('/Users/yutakakudo/Google ドライブ/colab/json/refill_東京都_中野駅_2021-08-18_0232.txt') as f:
+    # with open('/Users/yutakakudo/Google ドライブ/colab/json/refill_東京都_町田駅_2021-08-24_1835.txt') as f:
     #     to_collect = [s.strip() for s in f.readlines()]
-    # to_collect = to_collect[-630:]
-    # # to_collect[-630]
+    # to_collect = to_collect[:-648]
 
     def replace_space(name: str):
         return name.replace(' ', '').replace('　', '')
@@ -188,7 +188,7 @@ def scrape_google_refill():
     try:
         for st_name in to_collect:
 
-            print(f'あと {length}')
+            print(f'\nあと {length}')
             search_window = driver.find_element_by_xpath("//input[@aria-label='検索']")
             search_window.clear()
             sleep(0.5)
@@ -222,9 +222,14 @@ def scrape_google_refill():
                 driver.find_element_by_css_selector(f'div.rl_full-list > div > div > div > div:nth-child(4) > div:nth-child({1+ad_count})').click()
                 sleep(2)
             except Exception:
-                length -= 1
-                print('店選択エラー continue')
-                continue
+                try:
+                    driver.find_element_by_css_selector(f'div.rl_full-list > div > div > div > div > div:nth-child(4) > div:nth-child({1+ad_count})').click()
+                    print("second attack!")
+                    sleep(2)
+                except Exception:
+                    length -= 1
+                    print('店選択エラー continue')
+                    continue
 
             try:
                 store_name: str = driver.find_element_by_css_selector('div.xpdopen > div > div > div > div > div > div > div > h2').text
@@ -250,8 +255,7 @@ def scrape_google_refill():
 
             atode_dict["name"] = store_name
             atode_dict["origin_name"] = st_name
-            debug(st_name)
-            debug(store_name)
+            debug(st_name, store_name)
 
             try:
                 phone = driver.find_element_by_xpath('/html/body/div[6]/div/div[8]/div[2]/div/div[2]/async-local-kp/div/div/div[1]/div/div/div/div[1]/div/div[1]/div').find_element_by_xpath("//span[@role='link']").text
@@ -268,7 +272,6 @@ def scrape_google_refill():
                 address = address.replace(zipcode, "").replace("日本、", "").strip()
                 # 全角→半角 変換
                 address = address.translate(ZEN2HAN)
-                print(address)
             except Exception:
                 address_ng_list.append(store_name)
                 address = ""

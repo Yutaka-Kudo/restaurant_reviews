@@ -90,12 +90,12 @@ def scrape_uber():
     area2s = [
         # "青山一丁目駅",
         # "赤羽駅",
-        "秋葉原駅",
+        # "秋葉原駅",
         # "浅草駅",
         # "麻布十番駅",
-        # "池袋駅",
-        # "板橋駅",
-        # "上野駅",
+        "池袋駅",
+        "板橋駅",
+        "上野駅",
         # "恵比寿駅",
         # "大久保駅",
         # "お台場海浜公園駅",
@@ -122,14 +122,11 @@ def scrape_uber():
     ]
     area_list = [[area1, area2] for area2 in area2s]
 
-    media_type_obj = models.Media_type.objects.get(media_type=media_type)
-
     for area1, area2 in area_list:
+        # driver = webdriver.Chrome('chromedriver', options=options)
         driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options)
-        dw = Wait_located(driver)
+        dw = Wait_located(driver)  # 自作のWebDriverWait簡潔版
         print(area1 + " " + area2)
-
-        area_obj = models.Area.objects.get(area_name=area1 + " " + area2)
 
         # driver = webdriver.Chrome('chromedriver', options=driver_settings.options)
 
@@ -155,6 +152,9 @@ def scrape_uber():
         # next_btn = dw.wait_lacated_xpath('/html/body/div[1]/div/main/div/div/div[2]/div/button')
         while True:
             try:
+                sleep(5)
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")  # これないと読めない
+
                 next_btn = dw.wait_lacated_xpath('/html/body/div[1]/div/main/div/div/div[2]/div/button')
                 # next_btn = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div/main/div/div/div[2]/div/button')))
                 # sleep(1)
@@ -185,20 +185,33 @@ def scrape_uber():
             while True:
                 # for i in range(20):
                 di = {}
+
+                # 存在確認
                 try:
-                    driver.find_element_by_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{num}]/div/a/h3').click()
+                    dw.wait_lacated_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{num}]/div/a/h3')
                 except Exception:
                     break
 
+                # レートあるか
+                # 注意、html構成がちょくちょくかわる
+                if not driver.find_elements_by_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{num}]/div/div/div/div[2]/div[1]/div[3]') and not driver.find_elements_by_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{num}]/div/div/div/div[2]/div[1]/img'):
+                    num += 1
+                    print("レートなし")
+                    continue
+
+                # 店クリック
+                dw.wait_lacated_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{num}]/div/a/h3').click()
+
+                # 現在営業してるかどうかでxpathが変わる wait_locatedでxpath確認
                 if switch is False:
                     try:
                         dw.wait_lacated_xpath('//*[@id="main-content"]/div[3]/div/div[3]/div[3]/div[1]/div[2]/div[2]/h1')
-                    except TimeoutException:
+                    except Exception:
                         switch = True
                 if switch is True:
                     try:
                         dw.wait_lacated_xpath('//*[@id="main-content"]/div[3]/div/div[4]/div[3]/div[1]/div[2]/div[2]/h1')
-                    except TimeoutException:
+                    except Exception:
                         dw.wait_lacated_xpath('//*[@id="main-content"]/div[3]/div/div[3]/div[3]/div[1]/div[2]/div[2]/h1')
                         switch = False
 
@@ -247,7 +260,7 @@ def scrape_uber():
                 print(f"count {num}")
                 print(di["name"])
                 print(di["rate"], di["review_count"], di["address"])
-                print("\n")
+                print("")
 
                 datalist.append(di)
 
@@ -281,8 +294,14 @@ def scrape_uber():
         #     dict = {}
         #     dict["name"] = driver.find_element_by_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{i}]/div/a/div/div[1]/p').text
 
-        #     try:  # html構成がちょくちょくかわる
+        # try:  # html構成がちょくちょくかわる
+        #     dict["rate"] =
+        #     float(driver.find_element_by_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{i}]/div/div/div/div[2]/div[1]/div[3]').text)
+        #     driver.find_element_by_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{i}]/div/div/div/div[2]/div[1]/img')
+        # except (ValueError, NoSuchElementException):
+        #     try:
         #         dict["rate"] = float(driver.find_element_by_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{i}]/div/a/div/div/div/div[3]/div/span[1]').text)
+
         #     except (ValueError, NoSuchElementException):
         #         try:
         #             dict["rate"] = float(driver.find_element_by_xpath(f'/html/body/div[1]/div/main/div/div/div[2]/div/div[2]/div[{i}]/div/a/div/div/div/div[2]/div/span[1]').text)
@@ -350,35 +369,6 @@ def scrape_uber():
         #     atode_flg = _atode_flg
         #     atode_dict.update(_atode_dict)
         #     created_list += _created_list
-
-        #     # media_data用ーーー
-        #     if atode_flg is False:
-        #         media_obj, _ = models.Media_data.objects.update_or_create(
-        #             store=store_obj, media_type=media_type_obj,
-        #             defaults={
-        #                 "url": store_url,
-        #                 "rate": rate,
-        #                 "review_count": review_count,
-        #             }
-        #         )
-        #     else:
-        #         atode_dict["store_url"] = store_url
-        #         atode_dict["rate"] = rate
-
-        #     # # レビューカウント用
-        #     # media_obj = models.Media_data.objects.get(store=store_obj, media_type=media_type_obj)
-        #     # review_count = len(models.Review.objects.filter(media=media_obj))
-        #     # if atode_flg is False:
-        #     #     models.Media_data.objects.update_or_create(
-        #     #         store=store_obj, media_type=media_type_obj, defaults={
-        #     #             "review_count": review_count,
-        #     #         }
-        #     #     )
-
-        #     # atode処理ーーーーーーーーー
-        #     if atode_dict:
-        #         atode_list.append(atode_dict)
-        #     # ーーーーーーーーーーーー
 
         # except Exception as e:
         #     print(e)

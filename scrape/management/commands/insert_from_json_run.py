@@ -14,7 +14,7 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
 
         filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/*.json")
         # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/tb_東京都_浅草_18から39_2021-08-04_0242.json")
-        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/振り分けリスト/google_東京都_六本木駅_update_2021-08-22_1816.json")
+        # filepaths = glob("/Users/yutakakudo/Google ドライブ/colab/json/振り分けリスト/google_東京都_二子玉川駅_update_2021-08-24_1756.json")
 
         prefixes = list(set(["_".join(file.split('_')[:3]) for file in filepaths]))
         prefixes = sorted(prefixes, reverse=True)  # tbを先にできるか
@@ -49,13 +49,8 @@ class Command(BaseCommand):  # コマンド python manage.py ~~
                 subprocess.run(['noti', "-m", "エラー"])
                 raise Exception(type(e), e)
 
-            # try:
             for file in file_list:
                 shutil.move(file, "/Users/yutakakudo/Google ドライブ/colab/json/使用済2")
-            # except Exception as e:
-            #     os.remove(file)
-            #     print(type(e), e)
-            #     print('ファイルが重複していましたが、削除して続けます。')
 
         subprocess.run(['noti', '-m', "!!!!!!!End!!!!!!!"])
 
